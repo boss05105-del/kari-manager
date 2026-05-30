@@ -239,7 +239,8 @@ export default function StoreCard() {
                     items_per_receipt: todayPlan.f_items,
                     conversion_shoes: todayPlan.f_conv_shoes,
                     conversion_insoles: todayPlan.f_conv_insoles,
-                    sbp_share: todayPlan.f_sbp
+                    sbp_share: todayPlan.f_sbp,
+                    mp_install_qty: todayPlan.f_mp
                   }}
                 />
               </div>
@@ -327,7 +328,8 @@ export default function StoreCard() {
                 ui_percent: day.f_ui, gold_qty: day.f_gold, silver_qty: day.f_silver,
                 finmoll_qty: day.f_finmoll, kari_qty: day.f_kari, yandex_qty: day.f_yandex,
                 items_per_receipt: day.f_items, conversion_shoes: day.f_conv_shoes,
-                conversion_insoles: day.f_conv_insoles, sbp_share: day.f_sbp
+                conversion_insoles: day.f_conv_insoles, sbp_share: day.f_sbp,
+                mp_install_qty: day.f_mp
               };
               const avg = calcAvgCompletion(day, fact);
 

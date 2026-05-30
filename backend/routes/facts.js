@@ -53,15 +53,16 @@ router.post('/', authMiddleware, async (req, res) => {
       INSERT INTO daily_facts
       (store_id, director_id, fact_date, ui_percent, gold_qty, silver_qty,
        finmoll_qty, kari_qty, yandex_qty, items_per_receipt,
-       conversion_shoes, conversion_insoles, sbp_share,
+       conversion_shoes, conversion_insoles, sbp_share, mp_install_qty,
        what_helped, obstacles, tomorrow_actions, is_late)
-      VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+      VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
     `, [
       parseInt(store_id), director?.director_id || req.user.id, fact_date,
       kpis.ui_percent || null, kpis.gold_qty || null, kpis.silver_qty || null,
       kpis.finmoll_qty || null, kpis.kari_qty || null, kpis.yandex_qty || null,
       kpis.items_per_receipt || null, kpis.conversion_shoes || null,
       kpis.conversion_insoles || null, kpis.sbp_share || null,
+      kpis.mp_install_qty || null,
       what_helped.trim(), obstacles.trim(), tomorrow_actions.trim(),
       isLate ? 1 : 0
     ]);

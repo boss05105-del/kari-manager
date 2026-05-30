@@ -97,6 +97,7 @@ router.get('/:id', authMiddleware, async (req, res) => {
         f.finmoll_qty as f_finmoll, f.kari_qty as f_kari, f.yandex_qty as f_yandex,
         f.items_per_receipt as f_items, f.conversion_shoes as f_conv_shoes,
         f.conversion_insoles as f_conv_insoles, f.sbp_share as f_sbp,
+        f.mp_install_qty as f_mp,
         f.what_helped, f.obstacles, f.tomorrow_actions,
         f.submitted_at as fact_submitted_at, f.is_late as fact_is_late
       FROM daily_plans p
@@ -147,6 +148,7 @@ router.get('/:id/history', authMiddleware, async (req, res) => {
         f.finmoll_qty as f_finmoll, f.kari_qty as f_kari, f.yandex_qty as f_yandex,
         f.items_per_receipt as f_items, f.conversion_shoes as f_conv_shoes,
         f.conversion_insoles as f_conv_insoles, f.sbp_share as f_sbp,
+        f.mp_install_qty as f_mp,
         f.what_helped, f.obstacles, f.tomorrow_actions,
         f.submitted_at as fact_submitted_at, f.is_late as fact_late
       FROM daily_plans p
