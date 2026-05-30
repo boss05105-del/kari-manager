@@ -112,7 +112,7 @@ export default function PlanForm() {
             <div className="bg-red-50 border border-red-200 rounded-xl p-3 flex items-center gap-2">
               <span>🔴</span>
               <p className="text-sm text-red-700">
-                Время для постановки плана истекло (после 11:00). Факт будет отмечен как просрочка.
+                План ставится с опозданием (после 11:00) — будет отмечена просрочка. Всё равно заполните план.
               </p>
             </div>
           )}
