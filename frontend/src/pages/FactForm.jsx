@@ -9,9 +9,11 @@ export default function FactForm() {
   const user = JSON.parse(localStorage.getItem('user') || '{}');
   const today = new Date().toISOString().split('T')[0];
   const now = new Date();
-  const moscowHour = new Date(now.toLocaleString('en-US', { timeZone: 'Europe/Moscow' })).getHours();
-  const isLate = moscowHour >= 23;
-  const isEarlyWarning = moscowHour >= 22;
+  const moscowNow = new Date(now.toLocaleString('en-US', { timeZone: 'Europe/Moscow' }));
+  const moscowHour = moscowNow.getHours();
+  const moscowMin = moscowNow.getMinutes();
+  const isLate = moscowHour > 23 || (moscowHour === 23 && moscowMin >= 30);
+  const isEarlyWarning = moscowHour === 23 && moscowMin >= 0 && moscowMin < 30;
 
   const [plan, setPlan] = useState(null);
   const [fact, setFact] = useState(null);
@@ -139,12 +141,12 @@ export default function FactForm() {
         <form onSubmit={handleSubmit} className="space-y-5">
           {isEarlyWarning && !isLate && (
             <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-3 text-sm text-yellow-800">
-              ⚠️ Уже почти 23:00 — успейте внести факт вовремя
+              ⚠️ Уже почти 23:30 — успейте внести факт вовремя
             </div>
           )}
           {isLate && (
             <div className="bg-red-50 border border-red-200 rounded-xl p-3 text-sm text-red-700">
-              🔴 Время для внесения факта истекло (после 23:00). Будет отмечена просрочка.
+              🔴 Время для внесения факта истекло (после 23:30). Будет отмечена просрочка.
             </div>
           )}
 

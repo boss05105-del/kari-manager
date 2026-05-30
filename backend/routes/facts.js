@@ -43,9 +43,11 @@ router.post('/', authMiddleware, async (req, res) => {
     if (existing) return res.status(409).json({ error: 'Факт на эту дату уже зафиксирован' });
 
     const now = new Date();
-    const moscowHour = new Date(now.toLocaleString('en-US', { timeZone: 'Europe/Moscow' })).getHours();
+    const moscowNow = new Date(now.toLocaleString('en-US', { timeZone: 'Europe/Moscow' }));
+    const moscowHour = moscowNow.getHours();
+    const moscowMin = moscowNow.getMinutes();
     const isToday = fact_date === now.toISOString().split('T')[0];
-    const isLate = isToday && moscowHour >= 23;
+    const isLate = isToday && (moscowHour > 23 || (moscowHour === 23 && moscowMin >= 30));
 
     const director = await dbGet('SELECT director_id FROM stores WHERE id = ?', [parseInt(store_id)]);
 

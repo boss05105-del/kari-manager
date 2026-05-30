@@ -62,7 +62,7 @@ function setupScheduler() {
     }
   }, { timezone: 'Europe/Moscow' });
 
-  cron.schedule('0 22 * * 1-6', async () => {
+  cron.schedule('0 23 * * 1-6', async () => {
     const today = new Date().toISOString().split('T')[0];
     const directors = await dbAll(`
       SELECT u.id, s.id as store_id, s.store_number
@@ -71,12 +71,12 @@ function setupScheduler() {
     for (const d of directors) {
       const hasFact = await dbGet('SELECT 1 FROM daily_facts WHERE store_id = ? AND fact_date = ?', [d.store_id, today]);
       if (!hasFact) await notifyUser(d.id, 'fact_reminder',
-        'Напоминание: внесите факт до 23:00', '✅ Внесите результаты дня',
-        `Магазин ${d.store_number}: внесите фактические KPI до 23:00`);
+        'Напоминание: внесите факт до 23:30', '✅ Внесите результаты дня',
+        `Магазин ${d.store_number}: внесите фактические KPI до 23:30`);
     }
   }, { timezone: 'Europe/Moscow' });
 
-  cron.schedule('0 23 * * 1-6', async () => {
+  cron.schedule('30 23 * * 1-6', async () => {
     const today = new Date().toISOString().split('T')[0];
     const directors = await dbAll(`
       SELECT u.id, u.full_name, s.id as store_id, s.store_number
