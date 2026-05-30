@@ -112,12 +112,17 @@ export default function FactForm() {
         <div className="card p-5 space-y-4">
           <div className="flex items-center gap-3">
             <span className="text-2xl">🔒</span>
-            <div>
+            <div className="flex-1">
               <h3 className="font-semibold text-gray-800">Факт зафиксирован</h3>
-              <p className="text-sm text-gray-500">
-                {formatDateTime(fact.submitted_at)}
-                {fact.is_late ? ' · ⚠️ Просрочка' : ' · ✓ Вовремя'}
-              </p>
+              <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+                <span className="text-sm font-mono font-semibold text-gray-700">
+                  {formatDateTime(fact.submitted_at)}
+                </span>
+                {fact.is_late
+                  ? <span className="badge-yellow text-xs">⏰ Просрочка — после 23:30</span>
+                  : <span className="badge-green text-xs">✓ Вовремя</span>
+                }
+              </div>
             </div>
           </div>
           <KPIGrid plan={plan} fact={fact} storeNumber={user.store_number} hasGold={user.has_gold} />
@@ -146,7 +151,7 @@ export default function FactForm() {
           )}
           {isLate && (
             <div className="bg-red-50 border border-red-200 rounded-xl p-3 text-sm text-red-700">
-              🔴 Время для внесения факта истекло (после 23:30). Будет отмечена просрочка.
+              🔴 Срок подачи истёк (23:30) — заполните всё равно. Факт будет принят, но зафиксирована просрочка с точным временем подачи.
             </div>
           )}
 
