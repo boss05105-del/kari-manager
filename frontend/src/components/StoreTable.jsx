@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { relativeTime } from '../utils/dateUtils';
+import { relativeTime, formatTime } from '../utils/dateUtils';
 import EngagementBadge from './EngagementBadge';
 
 const STATUS_ROW = {
@@ -10,15 +10,15 @@ const STATUS_ROW = {
   default: 'hover:bg-gray-50 border-l-4 border-l-transparent'
 };
 
-function StatusDot({ ok, late, label }) {
+function StatusDot({ ok, late, label, time }) {
   if (!ok) return (
     <span className="badge-red">✗ Нет</span>
   );
   if (late) return (
-    <span className="badge-yellow">⏰ Просрочка</span>
+    <span className="badge-yellow">⏰ Просрочка{time ? ` ${formatTime(time)}` : ''}</span>
   );
   return (
-    <span className="badge-green">✓ {label}</span>
+    <span className="badge-green">✓ {label}{time ? ` ${formatTime(time)}` : ''}</span>
   );
 }
 
@@ -143,10 +143,10 @@ export default function StoreTable({ stores, loading }) {
                     {store.director_name}
                   </td>
                   <td className="table-cell">
-                    <StatusDot ok={store.plan_submitted} late={store.plan_late} label="Сдан" />
+                    <StatusDot ok={store.plan_submitted} late={store.plan_late} label="Сдан" time={store.plan_time} />
                   </td>
                   <td className="table-cell">
-                    <StatusDot ok={store.fact_submitted} late={store.fact_late} label="Сдан" />
+                    <StatusDot ok={store.fact_submitted} late={store.fact_late} label="Сдан" time={store.fact_time} />
                   </td>
                   <td className="table-cell">
                     {store.day_completion != null ? (

@@ -4,7 +4,7 @@ import api from '../api/client';
 import KPIGrid from '../components/KPIGrid';
 import { EngagementBar } from '../components/EngagementBadge';
 import { CompletionLineChart, KPITrendChart } from '../components/Charts';
-import { formatDate, formatDateTime } from '../utils/dateUtils';
+import { formatDate, formatDateTime, formatTime } from '../utils/dateUtils';
 import { calcAvgCompletion, KPI_CONFIG, NO_GOLD_STORES } from '../utils/calculations';
 import DirectorActions from '../components/DirectorActions';
 import { KPIInputGrid } from '../components/KPIGrid';
@@ -91,6 +91,7 @@ export default function StoreCard() {
   const today = new Date().toISOString().split('T')[0];
   const todayPlan = store.history?.find(h => (h.date || String(h.plan_date).slice(0,10)) === today);
   const storeHasGold = !NO_GOLD_STORES.has(String(store.store_number));
+  const violations = store.history?.filter(h => h.is_late || h.fact_is_late) || [];
   const chartsData = trends.map(t => ({
     date: t.date,
     completion: t.completion
@@ -139,6 +140,53 @@ export default function StoreCard() {
           </div>
         )}
       </div>
+
+      {/* Violations report */}
+      {violations.length > 0 && (
+        <div className="card p-4">
+          <div className="flex items-center gap-2 mb-3">
+            <span className="text-lg">⚠️</span>
+            <h3 className="font-semibold text-gray-800">Нарушения дисциплины</h3>
+            <span className="ml-auto text-xs font-semibold bg-red-100 text-red-700 px-2 py-0.5 rounded-full">
+              {violations.length} нарушений за месяц
+            </span>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="text-xs text-gray-500 border-b border-gray-100">
+                  <th className="text-left pb-2 font-medium">Дата</th>
+                  <th className="text-left pb-2 font-medium">Тип</th>
+                  <th className="text-left pb-2 font-medium">Время подачи</th>
+                  <th className="text-left pb-2 font-medium">Опоздание</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-50">
+                {violations.map(h => (
+                  <React.Fragment key={h.plan_date}>
+                    {h.is_late && (
+                      <tr>
+                        <td className="py-1.5 text-gray-700">{formatDate(h.date || h.plan_date)}</td>
+                        <td className="py-1.5"><span className="badge-yellow text-xs">⏰ План</span></td>
+                        <td className="py-1.5 font-mono text-gray-800">{formatTime(h.submitted_at)}</td>
+                        <td className="py-1.5 text-red-600 text-xs">после 11:00</td>
+                      </tr>
+                    )}
+                    {h.fact_is_late && (
+                      <tr>
+                        <td className="py-1.5 text-gray-700">{formatDate(h.date || h.plan_date)}</td>
+                        <td className="py-1.5"><span className="badge-yellow text-xs">⏰ Факт</span></td>
+                        <td className="py-1.5 font-mono text-gray-800">{formatTime(h.fact_submitted_at)}</td>
+                        <td className="py-1.5 text-red-600 text-xs">после 23:00</td>
+                      </tr>
+                    )}
+                  </React.Fragment>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
 
       {/* Tabs */}
       <div className="flex gap-2 border-b border-gray-200 pb-0">
@@ -282,8 +330,12 @@ export default function StoreCard() {
                   >
                     <div className="flex items-center gap-3">
                       <span className="font-medium text-gray-800">{formatDate(day.plan_date)}</span>
-                      {day.is_late ? <span className="badge-yellow text-xs">⏰ Просрочка плана</span> : null}
-                      {day.fact_is_late ? <span className="badge-yellow text-xs">⏰ Просрочка факта</span> : null}
+                      {day.is_late
+                        ? <span className="badge-yellow text-xs">⏰ План {formatTime(day.submitted_at)}</span>
+                        : <span className="text-xs text-gray-400">{formatTime(day.submitted_at)}</span>}
+                      {day.fact_is_late
+                        ? <span className="badge-yellow text-xs">⏰ Факт {formatTime(day.fact_submitted_at)}</span>
+                        : null}
                     </div>
                     <div className="flex items-center gap-3">
                       {avg != null && (
