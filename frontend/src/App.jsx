@@ -12,6 +12,7 @@ import PlanForm from './pages/PlanForm';
 import FactForm from './pages/FactForm';
 import DirectorHistory from './pages/DirectorHistory';
 import DirectorReport from './pages/DirectorReport';
+import Ratings from './pages/Ratings';
 
 function useAuth() {
   const token = localStorage.getItem('token');
@@ -115,7 +116,7 @@ export default function App() {
         <ProtectedRoute requiredRole="admin"><Analytics /></ProtectedRoute>
       } />
       <Route path="/admin/ratings" element={
-        <ProtectedRoute requiredRole="admin"><Analytics /></ProtectedRoute>
+        <ProtectedRoute requiredRole="admin"><Ratings /></ProtectedRoute>
       } />
       <Route path="/admin/overdue" element={
         <ProtectedRoute requiredRole="admin"><OverdueReport /></ProtectedRoute>

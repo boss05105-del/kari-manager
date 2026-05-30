@@ -184,6 +184,141 @@ router.get('/overdue', authMiddleware, async (req, res) => {
   }
 });
 
+router.get('/top-ratings', authMiddleware, async (req, res) => {
+  try {
+    const { period = 'day' } = req.query;
+    const now = new Date();
+    const today = now.toISOString().split('T')[0];
+
+    const monthStart = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`;
+
+    function toMoscowMinutes(dt) {
+      if (!dt) return null;
+      const d = new Date(dt);
+      const moscow = new Date(d.toLocaleString('en-US', { timeZone: 'Europe/Moscow' }));
+      return moscow.getHours() * 60 + moscow.getMinutes();
+    }
+    function toDateKey(val) {
+      if (!val) return null;
+      if (val instanceof Date) return val.toISOString().split('T')[0];
+      return String(val).split('T')[0];
+    }
+    function formatMinutes(mins) {
+      if (mins == null) return '—';
+      return `${String(Math.floor(mins / 60)).padStart(2, '0')}:${String(mins % 60).padStart(2, '0')}`;
+    }
+
+    const KPI_FIELDS = ['ui_percent','gold_qty','silver_qty','finmoll_qty','kari_qty',
+      'yandex_qty','items_per_receipt','conversion_shoes','conversion_insoles','sbp_share','mp_install_qty'];
+
+    const stores = await dbAll(`
+      SELECT s.id, s.store_number, u.full_name as director_name
+      FROM stores s LEFT JOIN users u ON u.id = s.director_id ORDER BY s.store_number
+    `);
+
+    const storeStats = await Promise.all(stores.map(async store => {
+      if (period === 'day') {
+        const [plan, fact] = await Promise.all([
+          dbGet('SELECT * FROM daily_plans WHERE store_id = ? AND plan_date = ?', [store.id, today]),
+          dbGet('SELECT * FROM daily_facts WHERE store_id = ? AND fact_date = ?', [store.id, today])
+        ]);
+        const planMins = toMoscowMinutes(plan?.submitted_at);
+        const factMins = toMoscowMinutes(fact?.submitted_at);
+
+        let completion = null;
+        if (plan && fact) {
+          let total = 0, cnt = 0;
+          for (const f of KPI_FIELDS) {
+            if (plan[f] != null && fact[f] != null && plan[f] > 0) {
+              total += Math.min(fact[f] / plan[f], 1.5);
+              cnt++;
+            }
+          }
+          completion = cnt > 0 ? Math.round((total / cnt) * 100) : null;
+        }
+
+        return {
+          store_id: store.id, store_number: store.store_number,
+          director_name: store.director_name || '—',
+          plan_mins: planMins, plan_time: formatMinutes(planMins), plan_late: plan?.is_late || false,
+          fact_mins: factMins, fact_time: formatMinutes(factMins), fact_late: fact?.is_late || false,
+          completion, has_plan: !!plan, has_fact: !!fact
+        };
+      } else {
+        // Monthly
+        const [plans, facts] = await Promise.all([
+          dbAll('SELECT * FROM daily_plans WHERE store_id = ? AND plan_date >= ? AND plan_date <= ?', [store.id, monthStart, today]),
+          dbAll('SELECT * FROM daily_facts WHERE store_id = ? AND fact_date >= ? AND fact_date <= ?', [store.id, monthStart, today])
+        ]);
+
+        const factsByDate = {};
+        facts.forEach(f => { factsByDate[toDateKey(f.fact_date)] = f; });
+
+        let planMinsTotal = 0, planMinsCount = 0;
+        let factMinsTotal = 0, factMinsCount = 0;
+        let completionTotal = 0, completionCount = 0;
+
+        for (const plan of plans) {
+          const pm = toMoscowMinutes(plan.submitted_at);
+          if (pm != null) { planMinsTotal += pm; planMinsCount++; }
+          const fact = factsByDate[toDateKey(plan.plan_date)];
+          if (fact) {
+            const fm = toMoscowMinutes(fact.submitted_at);
+            if (fm != null) { factMinsTotal += fm; factMinsCount++; }
+            let total = 0, cnt = 0;
+            for (const f of KPI_FIELDS) {
+              if (plan[f] != null && fact[f] != null && plan[f] > 0) {
+                total += Math.min(fact[f] / plan[f], 1.5);
+                cnt++;
+              }
+            }
+            if (cnt > 0) { completionTotal += total / cnt; completionCount++; }
+          }
+        }
+
+        const avgPlanMins = planMinsCount > 0 ? Math.round(planMinsTotal / planMinsCount) : null;
+        const avgFactMins = factMinsCount > 0 ? Math.round(factMinsTotal / factMinsCount) : null;
+        const avgCompletion = completionCount > 0 ? Math.round((completionTotal / completionCount) * 100) : null;
+
+        return {
+          store_id: store.id, store_number: store.store_number,
+          director_name: store.director_name || '—',
+          plan_mins: avgPlanMins, plan_time: formatMinutes(avgPlanMins), plan_late: false,
+          fact_mins: avgFactMins, fact_time: formatMinutes(avgFactMins), fact_late: false,
+          completion: avgCompletion, has_plan: plans.length > 0, has_fact: factMinsCount > 0,
+          plans_count: planMinsCount, facts_count: factMinsCount
+        };
+      }
+    }));
+
+    // Top 10 fastest plan (lowest minutes, has plan)
+    const topPlanSpeed = [...storeStats]
+      .filter(s => s.plan_mins != null)
+      .sort((a, b) => a.plan_mins - b.plan_mins)
+      .slice(0, 10)
+      .map((s, i) => ({ ...s, rank: i + 1 }));
+
+    // Top 10 fastest fact
+    const topFactSpeed = [...storeStats]
+      .filter(s => s.fact_mins != null)
+      .sort((a, b) => a.fact_mins - b.fact_mins)
+      .slice(0, 10)
+      .map((s, i) => ({ ...s, rank: i + 1 }));
+
+    // Top 10 by completion
+    const topCompletion = [...storeStats]
+      .filter(s => s.completion != null)
+      .sort((a, b) => b.completion - a.completion)
+      .slice(0, 10)
+      .map((s, i) => ({ ...s, rank: i + 1 }));
+
+    res.json({ period, topPlanSpeed, topFactSpeed, topCompletion });
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ error: 'Ошибка сервера' });
+  }
+});
+
 router.get('/monthly-report', authMiddleware, async (req, res) => {
   try {
     const now = new Date();
