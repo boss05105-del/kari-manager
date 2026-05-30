@@ -230,6 +230,7 @@ export default function StoreCard() {
                 </div>
                 <KPIGrid
                   plan={todayPlan}
+                  storeNumber={store.store_number}
                   hasGold={storeHasGold}
                   fact={{
                     ui_percent: todayPlan.f_ui, gold_qty: todayPlan.f_gold,
@@ -288,7 +289,8 @@ export default function StoreCard() {
                     values={planValues}
                     onChange={(k, v) => setPlanValues(prev => ({ ...prev, [k]: v }))}
                     disabled={planSaving}
-                    hasGold={!NO_GOLD_STORES.has(String(store.store_number))}
+                    storeNumber={store.store_number}
+                    hasGold={storeHasGold}
                   />
                   <div>
                     <label className="label">💬 Комментарий <span className="text-gray-400 font-normal text-sm">(необязательно)</span></label>
@@ -356,7 +358,7 @@ export default function StoreCard() {
                   </button>
                   {selectedDay?.plan_date === day.plan_date && (
                     <div className="px-4 pb-4 border-t border-gray-100 space-y-3 pt-3">
-                      <KPIGrid plan={day} fact={fact} hasGold={storeHasGold} />
+                      <KPIGrid plan={day} fact={fact} storeNumber={store.store_number} hasGold={storeHasGold} />
                       {day.comment && <QABlock label="Комментарий к плану" text={day.comment} />}
                       {day.what_helped && (
                         <div className="space-y-2">

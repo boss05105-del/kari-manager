@@ -3,8 +3,17 @@ export const NO_GOLD_STORES = new Set([
   '11543','10953','11486','11403','10781','13005','11092','11121','11370','10980','11145'
 ]);
 
+// Stores with additional KPI exclusions beyond gold
+const STORE_EXCLUDED_KPIS = {
+  '11092': new Set(['gold_qty', 'ui_percent', 'silver_qty'])
+};
+
 export function getKpiConfig(storeNumber) {
-  if (storeNumber && NO_GOLD_STORES.has(String(storeNumber))) {
+  const sn = String(storeNumber);
+  if (STORE_EXCLUDED_KPIS[sn]) {
+    return KPI_CONFIG.filter(k => !STORE_EXCLUDED_KPIS[sn].has(k.key));
+  }
+  if (NO_GOLD_STORES.has(sn)) {
     return KPI_CONFIG.filter(k => k.key !== 'gold_qty');
   }
   return KPI_CONFIG;
