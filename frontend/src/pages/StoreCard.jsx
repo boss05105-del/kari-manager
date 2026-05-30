@@ -91,7 +91,11 @@ export default function StoreCard() {
   const today = new Date().toISOString().split('T')[0];
   const todayPlan = store.history?.find(h => (h.date || String(h.plan_date).slice(0,10)) === today);
   const storeHasGold = !NO_GOLD_STORES.has(String(store.store_number));
-  const violations = store.history?.filter(h => h.is_late || h.fact_is_late) || [];
+  const monthStart = today.slice(0, 7); // "YYYY-MM"
+  const violations = store.history?.filter(h => {
+    const d = h.date || String(h.plan_date).slice(0, 10);
+    return d.startsWith(monthStart) && (h.is_late || h.fact_is_late);
+  }) || [];
   const chartsData = trends.map(t => ({
     date: t.date,
     completion: t.completion
@@ -147,8 +151,11 @@ export default function StoreCard() {
           <div className="flex items-center gap-2 mb-3">
             <span className="text-lg">⚠️</span>
             <h3 className="font-semibold text-gray-800">Нарушения дисциплины</h3>
+            <span className="text-xs text-gray-400">
+              {new Date().toLocaleDateString('ru-RU', { month: 'long', year: 'numeric' })}
+            </span>
             <span className="ml-auto text-xs font-semibold bg-red-100 text-red-700 px-2 py-0.5 rounded-full">
-              {violations.length} нарушений за месяц
+              {violations.length} нарушений
             </span>
           </div>
           <div className="overflow-x-auto">
