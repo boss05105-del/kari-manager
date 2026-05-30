@@ -11,6 +11,7 @@ import DirectorDashboard from './pages/DirectorDashboard';
 import PlanForm from './pages/PlanForm';
 import FactForm from './pages/FactForm';
 import DirectorHistory from './pages/DirectorHistory';
+import DirectorReport from './pages/DirectorReport';
 
 function useAuth() {
   const token = localStorage.getItem('token');
@@ -77,6 +78,9 @@ export default function App() {
       } />
       <Route path="/admin/overdue" element={
         <ProtectedRoute requiredRole="admin"><OverdueReport /></ProtectedRoute>
+      } />
+      <Route path="/admin/report" element={
+        <ProtectedRoute requiredRole="admin"><DirectorReport /></ProtectedRoute>
       } />
 
       {/* Director routes */}

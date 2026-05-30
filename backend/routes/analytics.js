@@ -184,6 +184,118 @@ router.get('/overdue', authMiddleware, async (req, res) => {
   }
 });
 
+router.get('/monthly-report', authMiddleware, async (req, res) => {
+  try {
+    const now = new Date();
+    const defaultMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+    const monthStr = req.query.month || defaultMonth;
+    const [year, mon] = monthStr.split('-').map(Number);
+
+    const from = `${monthStr}-01`;
+    const lastDay = new Date(year, mon, 0).getDate();
+    const to = `${monthStr}-${String(lastDay).padStart(2, '0')}`;
+
+    function toDateKey(val) {
+      if (!val) return null;
+      if (val instanceof Date) return val.toISOString().split('T')[0];
+      return String(val).split('T')[0];
+    }
+    function toTimeStr(dt) {
+      if (!dt) return null;
+      const d = new Date(dt);
+      return d.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Moscow' });
+    }
+
+    // Working days up to today
+    const workingDays = [];
+    const cursor = new Date(from + 'T00:00:00');
+    const endDate = new Date(Math.min(new Date(to + 'T23:59:59'), now));
+    while (cursor <= endDate) {
+      if (cursor.getDay() !== 0) workingDays.push(cursor.toISOString().split('T')[0]);
+      cursor.setDate(cursor.getDate() + 1);
+    }
+
+    const KPI_KEYS = ['ui_percent','gold_qty','silver_qty','finmoll_qty','kari_qty',
+      'yandex_qty','items_per_receipt','conversion_shoes','conversion_insoles','sbp_share','mp_install_qty'];
+
+    const stores = await dbAll(`
+      SELECT s.id, s.store_number, u.full_name as director_name
+      FROM stores s LEFT JOIN users u ON u.id = s.director_id ORDER BY s.store_number
+    `);
+
+    const result = await Promise.all(stores.map(async store => {
+      const [plans, facts] = await Promise.all([
+        dbAll('SELECT * FROM daily_plans WHERE store_id = ? AND plan_date >= ? AND plan_date <= ?', [store.id, from, to]),
+        dbAll('SELECT * FROM daily_facts WHERE store_id = ? AND fact_date >= ? AND fact_date <= ?', [store.id, from, to])
+      ]);
+
+      const plansByDate = {}, factsByDate = {};
+      plans.forEach(p => { plansByDate[toDateKey(p.plan_date)] = p; });
+      facts.forEach(f => { factsByDate[toDateKey(f.fact_date)] = f; });
+
+      let latePlans = 0, missingPlans = 0, completionTotal = 0, completionCount = 0;
+      const days = {};
+
+      for (const d of workingDays) {
+        const plan = plansByDate[d];
+        const fact = factsByDate[d];
+        if (!plan) missingPlans++;
+        else if (plan.is_late) latePlans++;
+
+        let completion = null;
+        const kpis = {};
+        if (plan && fact) {
+          let total = 0, cnt = 0;
+          for (const k of KPI_KEYS) {
+            if (plan[k] != null && fact[k] != null && plan[k] > 0) {
+              const pct = Math.round(Math.min(fact[k] / plan[k], 1.5) * 100);
+              kpis[k] = { plan: plan[k], fact: fact[k], pct };
+              total += Math.min(fact[k] / plan[k], 1.5);
+              cnt++;
+            } else if (plan[k] != null) {
+              kpis[k] = { plan: plan[k], fact: fact[k] ?? null, pct: null };
+            }
+          }
+          if (cnt > 0) {
+            completion = Math.round((total / cnt) * 100);
+            completionTotal += completion;
+            completionCount++;
+          }
+        }
+
+        days[d] = {
+          plan_time: toTimeStr(plan?.submitted_at),
+          plan_late: plan?.is_late || false,
+          plan_missing: !plan,
+          fact_time: toTimeStr(fact?.submitted_at),
+          fact_late: fact?.is_late || false,
+          fact_missing: !fact,
+          completion,
+          kpis
+        };
+      }
+
+      return {
+        store_id: store.id,
+        store_number: store.store_number,
+        director_name: store.director_name || '—',
+        days,
+        summary: {
+          late_plans: latePlans,
+          missing_plans: missingPlans,
+          avg_completion: completionCount > 0 ? Math.round(completionTotal / completionCount) : null,
+          fill_rate: workingDays.length > 0 ? Math.round(((workingDays.length - missingPlans) / workingDays.length) * 100) : 0
+        }
+      };
+    }));
+
+    res.json({ month: monthStr, working_days: workingDays, stores: result });
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ error: 'Ошибка сервера' });
+  }
+});
+
 router.get('/export', authMiddleware, async (req, res) => {
   try {
     const { period = 'month' } = req.query;
