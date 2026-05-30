@@ -108,7 +108,7 @@ export default function DirectorDashboard() {
               }`}>{avgCompletion}%</span>
             )}
           </div>
-          <KPIGrid plan={todayPlan} fact={todayFact} />
+          <KPIGrid plan={todayPlan} fact={todayFact} storeNumber={user.store_number} hasGold={user.has_gold} />
         </div>
       )}
 
@@ -150,7 +150,8 @@ export default function DirectorDashboard() {
                 ui_percent: day.f_ui, gold_qty: day.f_gold, silver_qty: day.f_silver,
                 finmoll_qty: day.f_finmoll, kari_qty: day.f_kari, yandex_qty: day.f_yandex,
                 items_per_receipt: day.f_items, conversion_shoes: day.f_conv_shoes,
-                conversion_insoles: day.f_conv_insoles, sbp_share: day.f_sbp
+                conversion_insoles: day.f_conv_insoles, sbp_share: day.f_sbp,
+                mp_install_qty: day.f_mp
               };
               const avg = calcAvgCompletion(day, fact);
 
