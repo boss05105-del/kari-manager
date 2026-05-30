@@ -20,7 +20,8 @@ export const KPI_CONFIG = [
   { key: 'items_per_receipt',  label: 'Штук в чеке',           unit: 'шт', type: 'decimal' },
   { key: 'conversion_shoes',   label: 'Конверсия обувь+косм.', unit: '%',  type: 'percent' },
   { key: 'conversion_insoles', label: 'Конверсия стельки',     unit: '%',  type: 'percent' },
-  { key: 'sbp_share',          label: 'Доля СБП',              unit: '%',  type: 'percent' }
+  { key: 'sbp_share',          label: 'Доля СБП',              unit: '%',  type: 'percent' },
+  { key: 'mp_install_qty',     label: 'Установка МП',          unit: 'шт', type: 'count' }
 ];
 
 export function calcCompletion(plan, fact) {
