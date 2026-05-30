@@ -92,7 +92,7 @@ export function KPIInputGrid({ values, onChange, disabled, storeNumber, hasGold,
             </label>
             <input
               type="number"
-              step={kpi.type === 'decimal' || kpi.type === 'percent' ? '0.1' : '1'}
+              step={kpi.type === 'decimal' ? '0.01' : kpi.type === 'percent' ? '0.1' : '1'}
               min={isPlan ? (kpi.min ?? 0) : 0}
               value={val ?? ''}
               onChange={e => onChange(kpi.key, e.target.value)}
