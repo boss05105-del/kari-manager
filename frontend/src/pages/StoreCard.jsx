@@ -262,10 +262,10 @@ export default function StoreCard() {
       {/* History tab */}
       {activeTab === 'history' && (
         <div className="space-y-3">
-          {store.history?.filter(h => h.plan_date !== today).length === 0 ? (
+          {store.history?.filter(h => String(h.plan_date).slice(0,10) !== today).length === 0 ? (
             <div className="card p-10 text-center text-gray-400">История пуста</div>
           ) : (
-            store.history?.filter(h => h.plan_date !== today).map(day => {
+            store.history?.filter(h => String(h.plan_date).slice(0,10) !== today).map(day => {
               const fact = {
                 ui_percent: day.f_ui, gold_qty: day.f_gold, silver_qty: day.f_silver,
                 finmoll_qty: day.f_finmoll, kari_qty: day.f_kari, yandex_qty: day.f_yandex,
