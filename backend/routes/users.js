@@ -72,18 +72,22 @@ router.post('/reset-director/:storeId', authMiddleware, adminOnly, async (req, r
 
 router.post('/setup-profile', authMiddleware, async (req, res) => {
   try {
-    const { full_name, new_password } = req.body;
+    const { full_name, new_password, skip_password } = req.body;
     if (!full_name || full_name.trim().length < 5) {
       return res.status(400).json({ error: 'Введите полное ФИО (минимум 5 символов)' });
     }
-    if (!new_password || new_password.length < 6) {
-      return res.status(400).json({ error: 'Пароль должен содержать минимум 6 символов' });
-    }
 
-    const hashed = await bcrypt.hash(new_password, 10);
-    await dbRun('UPDATE users SET full_name = ?, password = ?, profile_completed = 1 WHERE id = ?', [
-      full_name.trim(), hashed, req.user.id
-    ]);
+    if (skip_password) {
+      await dbRun('UPDATE users SET full_name = ? WHERE id = ?', [full_name.trim(), req.user.id]);
+    } else {
+      if (!new_password || new_password.length < 6) {
+        return res.status(400).json({ error: 'Пароль должен содержать минимум 6 символов' });
+      }
+      const hashed = await bcrypt.hash(new_password, 10);
+      await dbRun('UPDATE users SET full_name = ?, password = ?, profile_completed = 1 WHERE id = ?', [
+        full_name.trim(), hashed, req.user.id
+      ]);
+    }
     await dbRun('INSERT INTO action_log (user_id, action) VALUES (?, ?)', [req.user.id, 'profile_setup']);
 
     res.json({ ok: true, full_name: full_name.trim() });

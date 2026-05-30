@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import NotificationBell from './NotificationBell';
+import api from '../api/client';
 
 const NAV_ADMIN = [
   { to: '/admin', label: 'Дашборд', icon: '📊' },
@@ -20,10 +21,27 @@ export default function Layout({ children }) {
   const location = useLocation();
   const navigate = useNavigate();
   const [menuOpen, setMenuOpen] = useState(false);
+  const [editName, setEditName] = useState(false);
+  const [nameValue, setNameValue] = useState('');
+  const [nameSaving, setNameSaving] = useState(false);
 
   const rawUser = localStorage.getItem('user');
   const user = rawUser ? JSON.parse(rawUser) : null;
   const nav = user?.role === 'admin' ? NAV_ADMIN : NAV_DIRECTOR;
+
+  async function handleSaveName(e) {
+    e.preventDefault();
+    if (nameValue.trim().length < 5) return;
+    setNameSaving(true);
+    try {
+      await api.post('/users/setup-profile', { full_name: nameValue.trim(), new_password: null, skip_password: true });
+      const updated = { ...user, full_name: nameValue.trim() };
+      localStorage.setItem('user', JSON.stringify(updated));
+      setEditName(false);
+      window.location.reload();
+    } catch {}
+    finally { setNameSaving(false); }
+  }
 
   function handleLogout() {
     localStorage.removeItem('token');
@@ -72,9 +90,19 @@ export default function Layout({ children }) {
 
           <div className="flex items-center gap-2">
             <NotificationBell />
-            <div className="hidden sm:flex items-center gap-2 text-sm">
-              <span className="text-red-200 truncate max-w-[140px]">{user?.full_name?.split(' ')[0]}</span>
-            </div>
+            {user?.role === 'director' && (
+              <button
+                onClick={() => { setNameValue(user.full_name || ''); setEditName(true); }}
+                className="hidden sm:flex items-center gap-1 text-sm text-purple-200 hover:text-white transition-colors"
+                title="Изменить ФИО"
+              >
+                <span className="truncate max-w-[140px]">{user?.full_name?.split(' ')[0]}</span>
+                <span className="text-xs opacity-60">✏️</span>
+              </button>
+            )}
+            {user?.role !== 'director' && (
+              <span className="hidden sm:block text-sm text-purple-200 truncate max-w-[140px]">{user?.full_name?.split(' ')[0]}</span>
+            )}
             <button
               onClick={handleLogout}
               className="p-1.5 rounded hover:bg-purple-800 transition-colors text-purple-200 hover:text-white"
@@ -107,6 +135,31 @@ export default function Layout({ children }) {
               {item.label}
             </Link>
           ))}
+        </div>
+      )}
+
+      {/* Edit name modal */}
+      {editName && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-sm space-y-4">
+            <h3 className="text-lg font-semibold text-gray-800">Изменить ФИО</h3>
+            <form onSubmit={handleSaveName} className="space-y-4">
+              <input
+                type="text"
+                className="input"
+                placeholder="Фамилия Имя Отчество"
+                value={nameValue}
+                onChange={e => setNameValue(e.target.value)}
+                autoFocus
+              />
+              <div className="flex gap-2">
+                <button type="submit" disabled={nameSaving || nameValue.trim().length < 5} className="btn-primary flex-1">
+                  {nameSaving ? 'Сохранение...' : 'Сохранить'}
+                </button>
+                <button type="button" onClick={() => setEditName(false)} className="btn-secondary flex-1">Отмена</button>
+              </div>
+            </form>
+          </div>
         </div>
       )}
 
