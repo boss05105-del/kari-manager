@@ -22,9 +22,6 @@ router.post('/', authMiddleware, async (req, res) => {
     const { store_id, plan_date, comment, ...kpis } = req.body;
 
     if (!store_id || !plan_date) return res.status(400).json({ error: 'Укажите магазин и дату' });
-    if (!comment || comment.trim().length < 20) {
-      return res.status(400).json({ error: 'Комментарий должен содержать минимум 20 символов' });
-    }
 
     if (req.user.role === 'director') {
       const dirStore = await dbGet('SELECT id FROM stores WHERE director_id = ?', [req.user.id]);
@@ -59,15 +56,16 @@ router.post('/', authMiddleware, async (req, res) => {
       INSERT INTO daily_plans
       (store_id, director_id, plan_date, ui_percent, gold_qty, silver_qty,
        finmoll_qty, kari_qty, yandex_qty, items_per_receipt,
-       conversion_shoes, conversion_insoles, sbp_share, comment, is_late)
-      VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+       conversion_shoes, conversion_insoles, sbp_share, mp_install_qty, comment, is_late)
+      VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
     `, [
       parseInt(store_id), director?.id || req.user.id, plan_date,
       kpis.ui_percent || null, kpis.gold_qty || null, kpis.silver_qty || null,
       kpis.finmoll_qty || null, kpis.kari_qty || null, kpis.yandex_qty || null,
       kpis.items_per_receipt || null, kpis.conversion_shoes || null,
       kpis.conversion_insoles || null, kpis.sbp_share || null,
-      comment.trim(), isLate ? 1 : 0
+      kpis.mp_install_qty || null,
+      (comment || '').trim(), isLate ? 1 : 0
     ]);
 
     await dbRun('INSERT INTO action_log (user_id, action, details) VALUES (?, ?, ?)', [

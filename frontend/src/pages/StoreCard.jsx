@@ -5,8 +5,9 @@ import KPIGrid from '../components/KPIGrid';
 import { EngagementBar } from '../components/EngagementBadge';
 import { CompletionLineChart, KPITrendChart } from '../components/Charts';
 import { formatDate, formatDateTime } from '../utils/dateUtils';
-import { calcAvgCompletion } from '../utils/calculations';
+import { calcAvgCompletion, KPI_CONFIG, NO_GOLD_STORES } from '../utils/calculations';
 import DirectorActions from '../components/DirectorActions';
+import { KPIInputGrid } from '../components/KPIGrid';
 
 const PERIODS = [
   { key: 'week', label: 'Неделя' },
@@ -23,6 +24,11 @@ export default function StoreCard() {
   const [selectedDay, setSelectedDay] = useState(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('today');
+  const [planValues, setPlanValues] = useState({});
+  const [planComment, setPlanComment] = useState('');
+  const [planSaving, setPlanSaving] = useState(false);
+  const [planError, setPlanError] = useState('');
+  const [showPlanForm, setShowPlanForm] = useState(false);
 
   useEffect(() => {
     loadStore();
@@ -40,6 +46,28 @@ export default function StoreCard() {
       if (data.history?.length > 0) setSelectedDay(data.history[0]);
     } catch { navigate('/admin'); }
     finally { setLoading(false); }
+  }
+
+  async function handleAdminPlan(e) {
+    e.preventDefault();
+    setPlanError('');
+    setPlanSaving(true);
+    try {
+      await api.post('/plans', {
+        store_id: store.id,
+        plan_date: today,
+        comment: planComment,
+        ...planValues
+      });
+      setShowPlanForm(false);
+      setPlanValues({});
+      setPlanComment('');
+      await loadStore();
+    } catch (err) {
+      setPlanError(err.error || 'Ошибка сохранения');
+    } finally {
+      setPlanSaving(false);
+    }
   }
 
   async function loadTrends() {
@@ -181,9 +209,49 @@ export default function StoreCard() {
               )}
             </>
           ) : (
-            <div className="card p-10 text-center text-gray-400">
-              <div className="text-5xl mb-3">📭</div>
-              <p className="font-medium">План на сегодня ещё не внесён</p>
+            <div className="space-y-4">
+              {!showPlanForm ? (
+                <div className="card p-8 text-center">
+                  <div className="text-5xl mb-3">📭</div>
+                  <p className="font-medium text-gray-500 mb-4">План на сегодня ещё не внесён</p>
+                  <button
+                    onClick={() => setShowPlanForm(true)}
+                    className="btn-primary"
+                  >
+                    📝 Поставить план за директора
+                  </button>
+                </div>
+              ) : (
+                <form onSubmit={handleAdminPlan} className="card p-5 space-y-4">
+                  <div className="flex items-center justify-between">
+                    <h3 className="font-semibold text-gray-800">📝 План — Магазин {store.store_number}</h3>
+                    <button type="button" onClick={() => setShowPlanForm(false)} className="text-gray-400 hover:text-gray-600 text-xl">✕</button>
+                  </div>
+                  <KPIInputGrid
+                    values={planValues}
+                    onChange={(k, v) => setPlanValues(prev => ({ ...prev, [k]: v }))}
+                    disabled={planSaving}
+                    hasGold={!NO_GOLD_STORES.has(String(store.store_number))}
+                  />
+                  <div>
+                    <label className="label">💬 Комментарий <span className="text-gray-400 font-normal text-sm">(необязательно)</span></label>
+                    <textarea
+                      className="input resize-none"
+                      rows={3}
+                      value={planComment}
+                      onChange={e => setPlanComment(e.target.value)}
+                      placeholder="Комментарий к плану..."
+                      disabled={planSaving}
+                    />
+                  </div>
+                  {planError && (
+                    <div className="bg-red-50 border border-red-200 rounded-lg p-3 text-red-700 text-sm">{planError}</div>
+                  )}
+                  <button type="submit" disabled={planSaving} className="btn-primary w-full">
+                    {planSaving ? 'Сохранение...' : '🔒 Зафиксировать план'}
+                  </button>
+                </form>
+              )}
             </div>
           )}
         </div>
