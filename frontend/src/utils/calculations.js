@@ -11,13 +11,13 @@ export function getKpiConfig(storeNumber) {
 }
 
 export const KPI_CONFIG = [
-  { key: 'ui_percent',         label: 'ЮИ',                    unit: '%',  type: 'percent' },
+  { key: 'ui_percent',         label: 'ЮИ',                    unit: '%',  type: 'percent', min: 5 },
   { key: 'gold_qty',           label: 'Золото',                unit: 'шт', type: 'count' },
-  { key: 'silver_qty',         label: 'Серебро',               unit: 'шт', type: 'count' },
-  { key: 'finmoll_qty',        label: 'Рассрочка Финмолл',     unit: 'шт', type: 'count' },
-  { key: 'kari_qty',           label: 'Kari Частями',          unit: 'шт', type: 'count' },
-  { key: 'yandex_qty',         label: 'Яндекс Сплит',          unit: 'шт', type: 'count' },
-  { key: 'items_per_receipt',  label: 'Штук в чеке',           unit: 'шт', type: 'decimal' },
+  { key: 'silver_qty',         label: 'Серебро',               unit: 'шт', type: 'count',   min: 5 },
+  { key: 'finmoll_qty',        label: 'Рассрочка Финмолл',     unit: 'шт', type: 'count',   min: 1 },
+  { key: 'kari_qty',           label: 'Kari Частями',          unit: 'шт', type: 'count',   min: 1 },
+  { key: 'yandex_qty',         label: 'Яндекс Сплит',          unit: 'шт', type: 'count',   min: 1 },
+  { key: 'items_per_receipt',  label: 'Штук в чеке',           unit: 'шт', type: 'decimal', min: 2.1 },
   { key: 'conversion_shoes',   label: 'Конверсия обувь+косм.', unit: '%',  type: 'percent' },
   { key: 'conversion_insoles', label: 'Конверсия стельки',     unit: '%',  type: 'percent' },
   { key: 'sbp_share',          label: 'Доля СБП',              unit: '%',  type: 'percent' },

@@ -77,23 +77,31 @@ export function KPIInputGrid({ values, onChange, disabled, storeNumber, hasGold 
   const config = hasGold === false ? KPI_CONFIG.filter(k => k.key !== 'gold_qty') : getKpiConfig(storeNumber);
   return (
     <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
-      {config.map(kpi => (
-        <div key={kpi.key} className="space-y-1">
-          <label className="block text-xs font-medium text-gray-600 leading-tight">
-            {kpi.label} <span className="text-gray-400">({kpi.unit})</span>
-          </label>
-          <input
-            type="number"
-            step={kpi.type === 'decimal' || kpi.type === 'percent' ? '0.1' : '1'}
-            min="0"
-            value={values[kpi.key] ?? ''}
-            onChange={e => onChange(kpi.key, e.target.value)}
-            disabled={disabled}
-            className="input text-sm"
-            placeholder="0"
-          />
-        </div>
-      ))}
+      {config.map(kpi => {
+        const val = values[kpi.key];
+        const hasMin = kpi.min != null;
+        const belowMin = hasMin && val !== '' && val != null && parseFloat(val) < kpi.min;
+        return (
+          <div key={kpi.key} className="space-y-1">
+            <label className="block text-xs font-medium text-gray-600 leading-tight">
+              {kpi.label} <span className="text-gray-400">({kpi.unit})</span>
+            </label>
+            <input
+              type="number"
+              step={kpi.type === 'decimal' || kpi.type === 'percent' ? '0.1' : '1'}
+              min={kpi.min ?? 0}
+              value={val ?? ''}
+              onChange={e => onChange(kpi.key, e.target.value)}
+              disabled={disabled}
+              className={`input text-sm ${belowMin ? 'border-red-400 bg-red-50' : ''}`}
+              placeholder={hasMin ? `мин. ${kpi.min}` : '0'}
+            />
+            {belowMin && (
+              <p className="text-xs text-red-500">Минимум: {kpi.min} {kpi.unit}</p>
+            )}
+          </div>
+        );
+      })}
     </div>
   );
 }

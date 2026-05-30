@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import api from '../api/client';
 import { KPIInputGrid } from '../components/KPIGrid';
-import { KPI_CONFIG } from '../utils/calculations';
+import { KPI_CONFIG, getKpiConfig } from '../utils/calculations';
 import { formatDateTime } from '../utils/dateUtils';
 
 export default function PlanForm() {
@@ -39,6 +39,17 @@ export default function PlanForm() {
   async function handleSubmit(e) {
     e.preventDefault();
     setError('');
+    // Validate minimums
+    const config = getKpiConfig(user.store_number);
+    for (const kpi of config) {
+      if (kpi.min != null) {
+        const val = parseFloat(values[kpi.key]);
+        if (isNaN(val) || val < kpi.min) {
+          setError(`${kpi.label}: минимальное значение ${kpi.min} ${kpi.unit}`);
+          return;
+        }
+      }
+    }
     setSaving(true);
     try {
       const payload = { store_id: user.store_id, plan_date: today, comment, ...values };
