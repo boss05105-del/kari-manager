@@ -1,0 +1,13 @@
+services:
+  - type: web
+    name: kari-manager
+    runtime: node
+    buildCommand: npm install --prefix backend && npm install --prefix frontend && npm run build --prefix frontend
+    startCommand: node backend/server.js
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        sync: false
+      - key: JWT_SECRET
+        generateValue: true
