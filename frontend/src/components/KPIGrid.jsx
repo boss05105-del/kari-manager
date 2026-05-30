@@ -91,11 +91,10 @@ export function KPIInputGrid({ values, onChange, disabled, storeNumber, hasGold,
               {kpi.label} <span className="text-gray-400">({kpi.unit})</span>
             </label>
             <input
-              type="number"
-              step={kpi.type === 'decimal' ? '0.01' : kpi.type === 'percent' ? '0.1' : '1'}
-              min={isPlan ? (kpi.min ?? 0) : 0}
+              type="text"
+              inputMode={kpi.type === 'count' ? 'numeric' : 'decimal'}
               value={val ?? ''}
-              onChange={e => onChange(kpi.key, e.target.value)}
+              onChange={e => onChange(kpi.key, e.target.value.replace(',', '.'))}
               disabled={disabled}
               className={`input text-sm ${belowMin ? 'border-red-400 bg-red-50' : ''}`}
               placeholder={hasMin ? `мин. ${kpi.min}` : '0'}
