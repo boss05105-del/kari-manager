@@ -45,7 +45,7 @@ router.post('/', authMiddleware, async (req, res) => {
     const now = new Date();
     const moscowHour = new Date(now.toLocaleString('en-US', { timeZone: 'Europe/Moscow' })).getHours();
     const isToday = fact_date === now.toISOString().split('T')[0];
-    const isLate = isToday && moscowHour >= 22;
+    const isLate = isToday && moscowHour >= 23;
 
     const director = await dbGet('SELECT director_id FROM stores WHERE id = ?', [parseInt(store_id)]);
 

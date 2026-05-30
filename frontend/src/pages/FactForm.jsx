@@ -10,8 +10,8 @@ export default function FactForm() {
   const today = new Date().toISOString().split('T')[0];
   const now = new Date();
   const moscowHour = new Date(now.toLocaleString('en-US', { timeZone: 'Europe/Moscow' })).getHours();
-  const isLate = moscowHour >= 22;
-  const isEarlyWarning = moscowHour >= 21;
+  const isLate = moscowHour >= 23;
+  const isEarlyWarning = moscowHour >= 22;
 
   const [plan, setPlan] = useState(null);
   const [fact, setFact] = useState(null);
@@ -98,7 +98,7 @@ export default function FactForm() {
       {plan && !fact && (
         <div className="card p-4">
           <h3 className="text-sm font-semibold text-gray-600 mb-3">📝 Ваш план на сегодня</h3>
-          <KPIGrid plan={plan} mode="plan" />
+          <KPIGrid plan={plan} mode="plan" storeNumber={user.store_number} />
           <p className="text-xs text-gray-400 mt-3">
             Поставлен: {formatDateTime(plan.submitted_at)}
           </p>
@@ -118,7 +118,7 @@ export default function FactForm() {
               </p>
             </div>
           </div>
-          <KPIGrid plan={plan} fact={fact} />
+          <KPIGrid plan={plan} fact={fact} storeNumber={user.store_number} />
           <div className="space-y-3 pt-2">
             {[
               { key: 'what_helped', label: '✅ Что помогло?' },
@@ -139,18 +139,18 @@ export default function FactForm() {
         <form onSubmit={handleSubmit} className="space-y-5">
           {isEarlyWarning && !isLate && (
             <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-3 text-sm text-yellow-800">
-              ⚠️ Уже почти 22:00 — успейте внести факт вовремя
+              ⚠️ Уже почти 23:00 — успейте внести факт вовремя
             </div>
           )}
           {isLate && (
             <div className="bg-red-50 border border-red-200 rounded-xl p-3 text-sm text-red-700">
-              🔴 Время для внесения факта истекло (после 22:00). Будет отмечена просрочка.
+              🔴 Время для внесения факта истекло (после 23:00). Будет отмечена просрочка.
             </div>
           )}
 
           <div className="card p-5 space-y-4">
             <h3 className="font-semibold text-gray-800">📊 Фактические результаты</h3>
-            <KPIInputGrid values={values} onChange={handleChange} disabled={saving} />
+            <KPIInputGrid values={values} onChange={handleChange} disabled={saving} storeNumber={user.store_number} />
           </div>
 
           <div className="card p-5 space-y-4">

@@ -1,5 +1,5 @@
 import React from 'react';
-import { KPI_CONFIG, calcCompletion, calcDeviation, formatKpiValue, getStatusColor } from '../utils/calculations';
+import { getKpiConfig, calcCompletion, calcDeviation, formatKpiValue, getStatusColor } from '../utils/calculations';
 
 const STATUS_COLOR = {
   green:  'border-green-400 bg-green-50',
@@ -14,10 +14,11 @@ const PCT_COLOR = {
   gray: 'text-gray-400'
 };
 
-export default function KPIGrid({ plan, fact, mode = 'both' }) {
+export default function KPIGrid({ plan, fact, mode = 'both', storeNumber }) {
+  const config = getKpiConfig(storeNumber);
   return (
     <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
-      {KPI_CONFIG.map(kpi => {
+      {config.map(kpi => {
         const pv = plan?.[kpi.key];
         const fv = fact?.[kpi.key];
         const pct = calcCompletion(pv, fv);
@@ -72,10 +73,11 @@ export default function KPIGrid({ plan, fact, mode = 'both' }) {
   );
 }
 
-export function KPIInputGrid({ values, onChange, disabled }) {
+export function KPIInputGrid({ values, onChange, disabled, storeNumber }) {
+  const config = getKpiConfig(storeNumber);
   return (
     <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
-      {KPI_CONFIG.map(kpi => (
+      {config.map(kpi => (
         <div key={kpi.key} className="space-y-1">
           <label className="block text-xs font-medium text-gray-600 leading-tight">
             {kpi.label} <span className="text-gray-400">({kpi.unit})</span>

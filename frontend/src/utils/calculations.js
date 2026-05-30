@@ -1,3 +1,15 @@
+export const NO_GOLD_STORES = new Set([
+  '10804','11284','10912','13074','10211','13121','10718','11631','11737','13149',
+  '11543','10953','11486','11403','10781','13005','11092','11121','11370','10980','11145'
+]);
+
+export function getKpiConfig(storeNumber) {
+  if (storeNumber && NO_GOLD_STORES.has(String(storeNumber))) {
+    return KPI_CONFIG.filter(k => k.key !== 'gold_qty');
+  }
+  return KPI_CONFIG;
+}
+
 export const KPI_CONFIG = [
   { key: 'ui_percent',         label: 'ЮИ',                    unit: '%',  type: 'percent' },
   { key: 'gold_qty',           label: 'Золото',                unit: 'шт', type: 'count' },

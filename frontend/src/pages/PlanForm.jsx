@@ -9,8 +9,8 @@ export default function PlanForm() {
   const today = new Date().toISOString().split('T')[0];
   const now = new Date();
   const moscowHour = new Date(now.toLocaleString('en-US', { timeZone: 'Europe/Moscow' })).getHours();
-  const isLateWarning = moscowHour >= 9;
-  const isLate = moscowHour >= 10;
+  const isLateWarning = moscowHour >= 10;
+  const isLate = moscowHour >= 11;
 
   const [plan, setPlan] = useState(null);
   const [values, setValues] = useState({});
@@ -104,7 +104,7 @@ export default function PlanForm() {
             <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-3 flex items-center gap-2">
               <span>⚠️</span>
               <p className="text-sm text-yellow-800">
-                Уже почти 10:00 — поторопитесь, чтобы не получить просрочку
+                Уже почти 11:00 — поторопитесь, чтобы не получить просрочку
               </p>
             </div>
           )}
@@ -112,14 +112,14 @@ export default function PlanForm() {
             <div className="bg-red-50 border border-red-200 rounded-xl p-3 flex items-center gap-2">
               <span>🔴</span>
               <p className="text-sm text-red-700">
-                Время для постановки плана истекло (после 10:00). Факт будет отмечен как просрочка.
+                Время для постановки плана истекло (после 11:00). Факт будет отмечен как просрочка.
               </p>
             </div>
           )}
 
           <div className="card p-5 space-y-4">
             <h3 className="font-semibold text-gray-800">📊 KPI на сегодня</h3>
-            <KPIInputGrid values={values} onChange={handleChange} disabled={saving} />
+            <KPIInputGrid values={values} onChange={handleChange} disabled={saving} storeNumber={user.store_number} />
           </div>
 
           <div className="card p-5">
