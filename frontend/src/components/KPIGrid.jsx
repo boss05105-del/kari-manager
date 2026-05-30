@@ -1,5 +1,5 @@
 import React from 'react';
-import { getKpiConfig, calcCompletion, calcDeviation, formatKpiValue, getStatusColor } from '../utils/calculations';
+import { KPI_CONFIG, getKpiConfig, calcCompletion, calcDeviation, formatKpiValue, getStatusColor } from '../utils/calculations';
 
 const STATUS_COLOR = {
   green:  'border-green-400 bg-green-50',
@@ -14,8 +14,8 @@ const PCT_COLOR = {
   gray: 'text-gray-400'
 };
 
-export default function KPIGrid({ plan, fact, mode = 'both', storeNumber }) {
-  const config = getKpiConfig(storeNumber);
+export default function KPIGrid({ plan, fact, mode = 'both', storeNumber, hasGold }) {
+  const config = hasGold === false ? KPI_CONFIG.filter(k => k.key !== 'gold_qty') : getKpiConfig(storeNumber);
   return (
     <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
       {config.map(kpi => {
@@ -73,8 +73,8 @@ export default function KPIGrid({ plan, fact, mode = 'both', storeNumber }) {
   );
 }
 
-export function KPIInputGrid({ values, onChange, disabled, storeNumber }) {
-  const config = getKpiConfig(storeNumber);
+export function KPIInputGrid({ values, onChange, disabled, storeNumber, hasGold }) {
+  const config = hasGold === false ? KPI_CONFIG.filter(k => k.key !== 'gold_qty') : getKpiConfig(storeNumber);
   return (
     <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
       {config.map(kpi => (

@@ -98,7 +98,7 @@ export default function FactForm() {
       {plan && !fact && (
         <div className="card p-4">
           <h3 className="text-sm font-semibold text-gray-600 mb-3">📝 Ваш план на сегодня</h3>
-          <KPIGrid plan={plan} mode="plan" storeNumber={user.store_number} />
+          <KPIGrid plan={plan} mode="plan" storeNumber={user.store_number} hasGold={user.has_gold} />
           <p className="text-xs text-gray-400 mt-3">
             Поставлен: {formatDateTime(plan.submitted_at)}
           </p>
@@ -118,7 +118,7 @@ export default function FactForm() {
               </p>
             </div>
           </div>
-          <KPIGrid plan={plan} fact={fact} storeNumber={user.store_number} />
+          <KPIGrid plan={plan} fact={fact} storeNumber={user.store_number} hasGold={user.has_gold} />
           <div className="space-y-3 pt-2">
             {[
               { key: 'what_helped', label: '✅ Что помогло?' },
@@ -150,7 +150,7 @@ export default function FactForm() {
 
           <div className="card p-5 space-y-4">
             <h3 className="font-semibold text-gray-800">📊 Фактические результаты</h3>
-            <KPIInputGrid values={values} onChange={handleChange} disabled={saving} storeNumber={user.store_number} />
+            <KPIInputGrid values={values} onChange={handleChange} disabled={saving} storeNumber={user.store_number} hasGold={user.has_gold} />
           </div>
 
           <div className="card p-5 space-y-4">

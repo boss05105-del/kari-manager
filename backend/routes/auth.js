@@ -7,6 +7,11 @@ const { authMiddleware } = require('../middleware/auth');
 const router = express.Router();
 const JWT_SECRET = process.env.JWT_SECRET || 'dev-secret';
 
+const NO_GOLD_STORES = new Set([
+  '10804','11284','10912','13074','10211','13121','10718','11631','11737','13149',
+  '11543','10953','11486','11403','10781','13005','11092','11121','11370','10980','11145'
+]);
+
 router.post('/login', async (req, res) => {
   try {
     const { username, password } = req.body;
@@ -43,6 +48,7 @@ router.post('/login', async (req, res) => {
         full_name: user.full_name,
         store_id: user.store_id,
         store_number: user.store_number,
+        has_gold: !NO_GOLD_STORES.has(String(user.store_number)),
         profile_completed: user.profile_completed
       }
     });
