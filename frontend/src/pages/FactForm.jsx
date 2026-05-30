@@ -46,16 +46,6 @@ export default function FactForm() {
 
   async function handleSubmit(e) {
     e.preventDefault();
-    for (const [key, label] of [
-      ['what_helped', 'Что помогло'],
-      ['obstacles', 'Препятствия'],
-      ['tomorrow_actions', 'Действия на завтра']
-    ]) {
-      if (!comments[key] || comments[key].trim().length < 10) {
-        setError(`Поле "${label}" должно содержать минимум 10 символов`);
-        return;
-      }
-    }
     setError('');
     setSaving(true);
     try {
@@ -181,7 +171,9 @@ export default function FactForm() {
               }
             ].map(field => (
               <div key={field.key}>
-                <label className="label font-medium">{field.label} <span className="text-red-500">*</span></label>
+                <label className="label font-medium">
+                  {field.label} <span className="text-gray-400 font-normal text-sm">(необязательно)</span>
+                </label>
                 <textarea
                   className="input resize-none"
                   rows={3}
@@ -190,7 +182,6 @@ export default function FactForm() {
                   placeholder={field.placeholder}
                   disabled={saving}
                 />
-                <p className="text-xs text-gray-400 mt-1">Минимум 10 символов · Введено: {comments[field.key].length}</p>
               </div>
             ))}
           </div>

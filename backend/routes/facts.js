@@ -22,12 +22,6 @@ router.post('/', authMiddleware, async (req, res) => {
     const { store_id, fact_date, what_helped, obstacles, tomorrow_actions, ...kpis } = req.body;
 
     if (!store_id || !fact_date) return res.status(400).json({ error: 'Укажите магазин и дату' });
-    if (!what_helped || what_helped.trim().length < 10)
-      return res.status(400).json({ error: 'Заполните поле "Что помогло выполнить план?"' });
-    if (!obstacles || obstacles.trim().length < 10)
-      return res.status(400).json({ error: 'Заполните поле "Какие препятствия возникли?"' });
-    if (!tomorrow_actions || tomorrow_actions.trim().length < 10)
-      return res.status(400).json({ error: 'Заполните поле "Действия на завтра"' });
 
     if (req.user.role === 'director') {
       const dirStore = await dbGet('SELECT id FROM stores WHERE director_id = ?', [req.user.id]);
