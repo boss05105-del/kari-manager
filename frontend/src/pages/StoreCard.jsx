@@ -89,7 +89,7 @@ export default function StoreCard() {
   if (!store) return null;
 
   const today = new Date().toISOString().split('T')[0];
-  const todayPlan = store.history?.find(h => String(h.plan_date).slice(0,10) === today);
+  const todayPlan = store.history?.find(h => (h.date || String(h.plan_date).slice(0,10)) === today);
   const storeHasGold = !NO_GOLD_STORES.has(String(store.store_number));
   const chartsData = trends.map(t => ({
     date: t.date,
@@ -262,10 +262,10 @@ export default function StoreCard() {
       {/* History tab */}
       {activeTab === 'history' && (
         <div className="space-y-3">
-          {store.history?.filter(h => String(h.plan_date).slice(0,10) !== today).length === 0 ? (
+          {store.history?.filter(h => (h.date || String(h.plan_date).slice(0,10)) !== today).length === 0 ? (
             <div className="card p-10 text-center text-gray-400">История пуста</div>
           ) : (
-            store.history?.filter(h => String(h.plan_date).slice(0,10) !== today).map(day => {
+            store.history?.filter(h => (h.date || String(h.plan_date).slice(0,10)) !== today).map(day => {
               const fact = {
                 ui_percent: day.f_ui, gold_qty: day.f_gold, silver_qty: day.f_silver,
                 finmoll_qty: day.f_finmoll, kari_qty: day.f_kari, yandex_qty: day.f_yandex,
