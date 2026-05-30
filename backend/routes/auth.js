@@ -58,6 +58,45 @@ router.post('/login', async (req, res) => {
   }
 });
 
+router.post('/login-store', async (req, res) => {
+  try {
+    const { store_number } = req.body;
+    if (!store_number) return res.status(400).json({ error: 'Введите номер магазина' });
+
+    const user = await dbGet(`
+      SELECT u.*, s.store_number, s.id as store_id
+      FROM users u
+      JOIN stores s ON s.director_id = u.id
+      WHERE s.store_number = $1 AND u.role = 'director'
+    `, [String(store_number).trim()]);
+
+    if (!user) return res.status(404).json({ error: 'Магазин не найден' });
+
+    const token = jwt.sign(
+      { id: user.id, username: user.username, role: user.role, store_id: user.store_id },
+      JWT_SECRET,
+      { expiresIn: '30d' }
+    );
+
+    res.json({
+      token,
+      user: {
+        id: user.id,
+        username: user.username,
+        role: user.role,
+        full_name: user.full_name,
+        store_id: user.store_id,
+        store_number: user.store_number,
+        has_gold: !NO_GOLD_STORES.has(String(user.store_number)),
+        profile_completed: user.profile_completed
+      }
+    });
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ error: 'Ошибка сервера' });
+  }
+});
+
 router.get('/me', authMiddleware, async (req, res) => {
   try {
     const user = await dbGet(`

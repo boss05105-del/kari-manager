@@ -4,11 +4,29 @@ import api from '../api/client';
 
 export default function Login() {
   const navigate = useNavigate();
+  const [mode, setMode] = useState('store'); // 'store' | 'admin'
+  const [storeNumber, setStoreNumber] = useState('');
   const [form, setForm] = useState({ username: '', password: '' });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
-  async function handleSubmit(e) {
+  async function handleStoreLogin(e) {
+    e.preventDefault();
+    setError('');
+    setLoading(true);
+    try {
+      const data = await api.post('/auth/login-store', { store_number: storeNumber });
+      localStorage.setItem('token', data.token);
+      localStorage.setItem('user', JSON.stringify(data.user));
+      navigate(data.user.profile_completed ? '/director' : '/setup');
+    } catch (err) {
+      setError(err.error || 'Магазин не найден');
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function handleAdminLogin(e) {
     e.preventDefault();
     setError('');
     setLoading(true);
@@ -16,7 +34,7 @@ export default function Login() {
       const data = await api.post('/auth/login', form);
       localStorage.setItem('token', data.token);
       localStorage.setItem('user', JSON.stringify(data.user));
-      navigate(data.user.role === 'admin' ? '/admin' : '/director');
+      navigate('/admin');
     } catch (err) {
       setError(err.error || 'Ошибка входа');
     } finally {
@@ -36,53 +54,91 @@ export default function Login() {
           <p className="text-purple-200 mt-1 text-sm">Система управления магазинами</p>
         </div>
 
-        {/* Form */}
-        <div className="bg-white rounded-2xl shadow-2xl p-6 space-y-4">
-          <h2 className="text-lg font-semibold text-gray-800">Вход в систему</h2>
+        <div className="bg-white rounded-2xl shadow-2xl p-6 space-y-5">
 
-          {error && (
-            <div className="bg-purple-50 border border-purple-200 text-purple-700 text-sm rounded-lg px-3 py-2.5">
-              {error}
-            </div>
+          {mode === 'store' ? (
+            <>
+              <div className="text-center">
+                <h2 className="text-xl font-bold text-gray-800">Введите номер магазина</h2>
+                <p className="text-gray-400 text-sm mt-1">Пароль не нужен</p>
+              </div>
+
+              {error && (
+                <div className="bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg px-3 py-2.5 text-center">
+                  {error}
+                </div>
+              )}
+
+              <form onSubmit={handleStoreLogin} className="space-y-4">
+                <input
+                  type="number"
+                  className="input text-center text-2xl font-bold tracking-widest h-14"
+                  placeholder="00000"
+                  value={storeNumber}
+                  onChange={e => setStoreNumber(e.target.value)}
+                  autoFocus
+                />
+                <button
+                  type="submit"
+                  disabled={loading || storeNumber.length < 4}
+                  className="btn-primary w-full py-3 text-base"
+                >
+                  {loading ? 'Входим...' : 'Войти →'}
+                </button>
+              </form>
+
+              <button
+                onClick={() => { setMode('admin'); setError(''); }}
+                className="w-full text-center text-xs text-gray-400 hover:text-gray-600 pt-1"
+              >
+                Войти как руководитель
+              </button>
+            </>
+          ) : (
+            <>
+              <div className="flex items-center gap-2">
+                <button onClick={() => { setMode('store'); setError(''); }} className="text-gray-400 hover:text-gray-600">←</button>
+                <h2 className="text-lg font-semibold text-gray-800">Вход для руководителя</h2>
+              </div>
+
+              {error && (
+                <div className="bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg px-3 py-2.5">
+                  {error}
+                </div>
+              )}
+
+              <form onSubmit={handleAdminLogin} className="space-y-4">
+                <div>
+                  <label className="label">Логин</label>
+                  <input
+                    type="text"
+                    className="input"
+                    placeholder="admin"
+                    value={form.username}
+                    onChange={e => setForm(f => ({ ...f, username: e.target.value }))}
+                    autoFocus
+                  />
+                </div>
+                <div>
+                  <label className="label">Пароль</label>
+                  <input
+                    type="password"
+                    className="input"
+                    placeholder="Введите пароль"
+                    value={form.password}
+                    onChange={e => setForm(f => ({ ...f, password: e.target.value }))}
+                  />
+                </div>
+                <button
+                  type="submit"
+                  disabled={loading || !form.username || !form.password}
+                  className="btn-primary w-full"
+                >
+                  {loading ? 'Входим...' : 'Войти'}
+                </button>
+              </form>
+            </>
           )}
-
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <label className="label">Логин</label>
-              <input
-                type="text"
-                className="input"
-                placeholder="Введите логин"
-                value={form.username}
-                onChange={e => setForm(f => ({ ...f, username: e.target.value }))}
-                autoComplete="username"
-                autoFocus
-              />
-            </div>
-            <div>
-              <label className="label">Пароль</label>
-              <input
-                type="password"
-                className="input"
-                placeholder="Введите пароль"
-                value={form.password}
-                onChange={e => setForm(f => ({ ...f, password: e.target.value }))}
-                autoComplete="current-password"
-              />
-            </div>
-            <button
-              type="submit"
-              disabled={loading || !form.username || !form.password}
-              className="btn-primary w-full"
-            >
-              {loading ? 'Входим...' : 'Войти'}
-            </button>
-          </form>
-
-          <div className="border-t border-gray-100 pt-3 text-xs text-gray-400 space-y-1">
-            <p><span className="font-medium">Руководитель:</span> admin / admin123</p>
-            <p><span className="font-medium">Директор:</span> dir11392 / store11392</p>
-          </div>
         </div>
       </div>
     </div>
