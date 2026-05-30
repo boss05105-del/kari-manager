@@ -90,6 +90,7 @@ export default function StoreCard() {
 
   const today = new Date().toISOString().split('T')[0];
   const todayPlan = store.history?.find(h => h.plan_date === today);
+  const storeHasGold = !NO_GOLD_STORES.has(String(store.store_number));
   const chartsData = trends.map(t => ({
     date: t.date,
     completion: t.completion
@@ -174,6 +175,7 @@ export default function StoreCard() {
                 </div>
                 <KPIGrid
                   plan={todayPlan}
+                  hasGold={storeHasGold}
                   fact={{
                     ui_percent: todayPlan.f_ui, gold_qty: todayPlan.f_gold,
                     silver_qty: todayPlan.f_silver, finmoll_qty: todayPlan.f_finmoll,
@@ -295,7 +297,7 @@ export default function StoreCard() {
                   </button>
                   {selectedDay?.plan_date === day.plan_date && (
                     <div className="px-4 pb-4 border-t border-gray-100 space-y-3 pt-3">
-                      <KPIGrid plan={day} fact={fact} />
+                      <KPIGrid plan={day} fact={fact} hasGold={storeHasGold} />
                       {day.comment && <QABlock label="Комментарий к плану" text={day.comment} />}
                       {day.what_helped && (
                         <div className="space-y-2">
