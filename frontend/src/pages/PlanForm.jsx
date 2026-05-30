@@ -38,10 +38,6 @@ export default function PlanForm() {
 
   async function handleSubmit(e) {
     e.preventDefault();
-    if (comment.trim().length < 20) {
-      setError('Комментарий должен содержать минимум 20 символов');
-      return;
-    }
     setError('');
     setSaving(true);
     try {
@@ -128,7 +124,7 @@ export default function PlanForm() {
 
           <div className="card p-5">
             <label className="label text-base font-semibold">
-              💬 Комментарий к плану <span className="text-red-500">*</span>
+              💬 Комментарий к плану <span className="text-gray-400 font-normal text-sm">(необязательно)</span>
             </label>
             <p className="text-sm text-gray-500 mb-2">
               Какие конкретные действия будут выполнены для достижения поставленных показателей сегодня?
@@ -141,9 +137,7 @@ export default function PlanForm() {
               placeholder="Опишите конкретные действия по каждому KPI..."
               disabled={saving}
             />
-            <p className="text-xs text-gray-400 mt-1">
-              Минимум 20 символов · Введено: {comment.length}
-            </p>
+            <p className="text-xs text-gray-400 mt-1">Введено: {comment.length}</p>
           </div>
 
           {error && (
