@@ -1,0 +1,13 @@
+{
+  "name": "Kari Manager",
+  "short_name": "Kari",
+  "description": "Система управления магазинами Kari",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#dc2626",
+  "orientation": "portrait",
+  "icons": [
+    { "src": "/favicon.svg", "sizes": "any", "type": "image/svg+xml" }
+  ]
+}
