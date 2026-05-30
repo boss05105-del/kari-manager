@@ -89,7 +89,7 @@ export default function StoreCard() {
   if (!store) return null;
 
   const today = new Date().toISOString().split('T')[0];
-  const todayPlan = store.history?.find(h => h.plan_date === today);
+  const todayPlan = store.history?.find(h => String(h.plan_date).slice(0,10) === today);
   const storeHasGold = !NO_GOLD_STORES.has(String(store.store_number));
   const chartsData = trends.map(t => ({
     date: t.date,
