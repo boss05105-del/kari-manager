@@ -78,7 +78,7 @@ router.post('/setup-profile', authMiddleware, async (req, res) => {
     }
 
     if (skip_password) {
-      await dbRun('UPDATE users SET full_name = ? WHERE id = ?', [full_name.trim(), req.user.id]);
+      await dbRun('UPDATE users SET full_name = ?, profile_completed = 1 WHERE id = ?', [full_name.trim(), req.user.id]);
     } else {
       if (!new_password || new_password.length < 6) {
         return res.status(400).json({ error: 'Пароль должен содержать минимум 6 символов' });
