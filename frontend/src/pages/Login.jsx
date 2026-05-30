@@ -25,15 +25,15 @@ export default function Login() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-red-600 to-red-800 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-br from-purple-700 to-purple-900 flex items-center justify-center p-4">
       <div className="w-full max-w-sm">
         {/* Logo */}
         <div className="text-center mb-8">
           <div className="inline-flex items-center justify-center w-16 h-16 bg-white rounded-2xl shadow-lg mb-4">
-            <span className="text-3xl font-black text-red-600">K</span>
+            <span className="text-2xl font-black text-purple-700 tracking-tight">kari</span>
           </div>
           <h1 className="text-2xl font-bold text-white">Kari Manager</h1>
-          <p className="text-red-200 mt-1 text-sm">Система управления магазинами</p>
+          <p className="text-purple-200 mt-1 text-sm">Система управления магазинами</p>
         </div>
 
         {/* Form */}
@@ -41,7 +41,7 @@ export default function Login() {
           <h2 className="text-lg font-semibold text-gray-800">Вход в систему</h2>
 
           {error && (
-            <div className="bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg px-3 py-2.5">
+            <div className="bg-purple-50 border border-purple-200 text-purple-700 text-sm rounded-lg px-3 py-2.5">
               {error}
             </div>
           )}

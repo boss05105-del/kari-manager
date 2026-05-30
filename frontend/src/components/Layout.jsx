@@ -34,11 +34,11 @@ export default function Layout({ children }) {
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
       {/* Top bar */}
-      <header className="bg-red-600 text-white shadow-md sticky top-0 z-30">
+      <header className="bg-purple-700 text-white shadow-md sticky top-0 z-30">
         <div className="max-w-7xl mx-auto px-4 h-14 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <button
-              className="lg:hidden p-1 rounded hover:bg-red-700 transition-colors"
+              className="lg:hidden p-1 rounded hover:bg-purple-800 transition-colors"
               onClick={() => setMenuOpen(!menuOpen)}
               aria-label="Меню"
             >
@@ -60,8 +60,8 @@ export default function Layout({ children }) {
                 to={item.to}
                 className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
                   location.pathname === item.to
-                    ? 'bg-red-800 text-white'
-                    : 'text-red-100 hover:bg-red-700 hover:text-white'
+                    ? 'bg-purple-900 text-white'
+                    : 'text-purple-200 hover:bg-purple-800 hover:text-white'
                 }`}
               >
                 <span className="mr-1">{item.icon}</span>
@@ -77,7 +77,7 @@ export default function Layout({ children }) {
             </div>
             <button
               onClick={handleLogout}
-              className="p-1.5 rounded hover:bg-red-700 transition-colors text-red-100 hover:text-white"
+              className="p-1.5 rounded hover:bg-purple-800 transition-colors text-purple-200 hover:text-white"
               title="Выйти"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -91,7 +91,7 @@ export default function Layout({ children }) {
 
       {/* Mobile nav */}
       {menuOpen && (
-        <div className="lg:hidden bg-red-700 px-4 py-2 flex flex-col gap-1 z-20 shadow-lg">
+        <div className="lg:hidden bg-purple-800 px-4 py-2 flex flex-col gap-1 z-20 shadow-lg">
           {nav.map(item => (
             <Link
               key={item.to}
@@ -99,8 +99,8 @@ export default function Layout({ children }) {
               onClick={() => setMenuOpen(false)}
               className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
                 location.pathname === item.to
-                  ? 'bg-red-900 text-white'
-                  : 'text-red-100 hover:bg-red-600'
+                  ? 'bg-purple-950 text-white'
+                  : 'text-purple-200 hover:bg-purple-700'
               }`}
             >
               <span className="mr-2">{item.icon}</span>
@@ -124,7 +124,7 @@ export default function Layout({ children }) {
               to={item.to}
               className={`flex-1 flex flex-col items-center py-2 text-xs transition-colors ${
                 location.pathname === item.to
-                  ? 'text-red-600'
+                  ? 'text-purple-700'
                   : 'text-gray-500 hover:text-gray-700'
               }`}
             >
