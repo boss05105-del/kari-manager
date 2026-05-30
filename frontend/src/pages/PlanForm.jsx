@@ -137,18 +137,14 @@ export default function PlanForm() {
             <label className="label text-base font-semibold">
               💬 Комментарий к плану <span className="text-gray-400 font-normal text-sm">(необязательно)</span>
             </label>
-            <p className="text-sm text-gray-500 mb-2">
-              Какие конкретные действия будут выполнены для достижения поставленных показателей сегодня?
-            </p>
             <textarea
               className="input resize-none"
-              rows={4}
+              rows={3}
               value={comment}
               onChange={e => setComment(e.target.value)}
-              placeholder="Опишите конкретные действия по каждому KPI..."
+              placeholder="Комментарий к плану..."
               disabled={saving}
             />
-            <p className="text-xs text-gray-400 mt-1">Введено: {comment.length}</p>
           </div>
 
           {error && (
