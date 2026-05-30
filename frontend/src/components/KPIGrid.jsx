@@ -73,13 +73,13 @@ export default function KPIGrid({ plan, fact, mode = 'both', storeNumber, hasGol
   );
 }
 
-export function KPIInputGrid({ values, onChange, disabled, storeNumber, hasGold }) {
+export function KPIInputGrid({ values, onChange, disabled, storeNumber, hasGold, isPlan = true }) {
   const config = hasGold === false ? KPI_CONFIG.filter(k => k.key !== 'gold_qty') : getKpiConfig(storeNumber);
   return (
     <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
       {config.map(kpi => {
         const val = values[kpi.key];
-        const hasMin = kpi.min != null;
+        const hasMin = isPlan && kpi.min != null;
         const belowMin = hasMin && val !== '' && val != null && parseFloat(val) < kpi.min;
         return (
           <div key={kpi.key} className="space-y-1">
@@ -89,7 +89,7 @@ export function KPIInputGrid({ values, onChange, disabled, storeNumber, hasGold 
             <input
               type="number"
               step={kpi.type === 'decimal' || kpi.type === 'percent' ? '0.1' : '1'}
-              min={kpi.min ?? 0}
+              min={isPlan ? (kpi.min ?? 0) : 0}
               value={val ?? ''}
               onChange={e => onChange(kpi.key, e.target.value)}
               disabled={disabled}

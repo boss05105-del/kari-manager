@@ -150,7 +150,7 @@ export default function FactForm() {
 
           <div className="card p-5 space-y-4">
             <h3 className="font-semibold text-gray-800">📊 Фактические результаты</h3>
-            <KPIInputGrid values={values} onChange={handleChange} disabled={saving} storeNumber={user.store_number} hasGold={user.has_gold} />
+            <KPIInputGrid values={values} onChange={handleChange} disabled={saving} storeNumber={user.store_number} hasGold={user.has_gold} isPlan={false} />
           </div>
 
           <div className="card p-5 space-y-4">
