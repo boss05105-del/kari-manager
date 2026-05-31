@@ -53,22 +53,37 @@ function CellTooltip({ day, date }) {
   );
 }
 
+function getCurrentWeek() {
+  const now = new Date();
+  const year = now.getFullYear();
+  const jan4 = new Date(year, 0, 4);
+  const startOfW1 = new Date(jan4);
+  startOfW1.setDate(jan4.getDate() - ((jan4.getDay() + 6) % 7));
+  const weekNum = Math.floor((now - startOfW1) / (7 * 86400000)) + 1;
+  return `${year}-W${String(weekNum).padStart(2, '0')}`;
+}
+
 export default function DirectorReport() {
   const now = new Date();
   const defaultMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+  const [period, setPeriod] = useState('month'); // 'month' | 'week'
   const [month, setMonth] = useState(defaultMonth);
+  const [week, setWeek] = useState(getCurrentWeek());
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [tooltip, setTooltip] = useState(null); // { storeIdx, date, x, y }
+  const [tooltip, setTooltip] = useState(null);
   const [expandedStore, setExpandedStore] = useState(null);
   const tooltipRef = useRef(null);
 
-  useEffect(() => { loadReport(); }, [month]);
+  useEffect(() => { loadReport(); }, [period, month, week]);
 
   async function loadReport() {
     setLoading(true);
     try {
-      const d = await api.get(`/analytics/monthly-report?month=${month}`);
+      const url = period === 'week'
+        ? `/analytics/weekly-report?week=${week}`
+        : `/analytics/monthly-report?month=${month}`;
+      const d = await api.get(url);
       setData(d);
     } catch {}
     finally { setLoading(false); }
@@ -139,10 +154,22 @@ export default function DirectorReport() {
     const ws3 = XLSX.utils.aoa_to_sheet(violRows);
     XLSX.utils.book_append_sheet(wb, ws3, 'Нарушения');
 
-    XLSX.writeFile(wb, `kari-report-${month}.xlsx`);
+    const filename = period === 'week' ? `kari-report-week-${week}.xlsx` : `kari-report-${month}.xlsx`;
+    XLSX.writeFile(wb, filename);
   }
 
-  const monthLabel = new Date(month + '-15').toLocaleDateString('ru-RU', { month: 'long', year: 'numeric' });
+  function getPeriodLabel() {
+    if (period === 'week') {
+      if (!data?.working_days?.length) return `Неделя ${week}`;
+      const first = data.working_days[0];
+      const last = data.working_days[data.working_days.length - 1];
+      const fmt = d => new Date(d + 'T12:00:00').toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' });
+      return `${fmt(first)} — ${fmt(last)}`;
+    }
+    return new Date(month + '-15').toLocaleDateString('ru-RU', { month: 'long', year: 'numeric' });
+  }
+
+  const monthLabel = getPeriodLabel();
 
   if (loading) return (
     <div className="flex items-center justify-center h-64 text-gray-400">
@@ -171,12 +198,35 @@ export default function DirectorReport() {
           <p className="text-gray-500 text-sm mt-0.5 capitalize">{monthLabel}</p>
         </div>
         <div className="flex gap-2 items-center flex-wrap">
-          <input
-            type="month"
-            value={month}
-            onChange={e => setMonth(e.target.value)}
-            className="input text-sm"
-          />
+          <div className="flex rounded-lg overflow-hidden border border-gray-200">
+            <button
+              onClick={() => setPeriod('month')}
+              className={`px-3 py-1.5 text-sm font-medium transition-colors ${period === 'month' ? 'bg-red-600 text-white' : 'bg-white text-gray-600 hover:bg-gray-50'}`}
+            >
+              Месяц
+            </button>
+            <button
+              onClick={() => setPeriod('week')}
+              className={`px-3 py-1.5 text-sm font-medium transition-colors ${period === 'week' ? 'bg-red-600 text-white' : 'bg-white text-gray-600 hover:bg-gray-50'}`}
+            >
+              Неделя
+            </button>
+          </div>
+          {period === 'month' ? (
+            <input
+              type="month"
+              value={month}
+              onChange={e => setMonth(e.target.value)}
+              className="input text-sm"
+            />
+          ) : (
+            <input
+              type="week"
+              value={week}
+              onChange={e => setWeek(e.target.value)}
+              className="input text-sm"
+            />
+          )}
           <button onClick={exportExcel} className="btn-primary flex items-center gap-2">
             📥 Скачать Excel
           </button>
@@ -339,7 +389,7 @@ export default function DirectorReport() {
       {/* Violations summary table */}
       <div className="card overflow-hidden">
         <div className="px-4 py-3 border-b border-gray-100 font-semibold text-gray-800">
-          ⚠️ Сводка нарушений за {monthLabel}
+          ⚠️ Сводка нарушений · {monthLabel}
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
