@@ -1,5 +1,5 @@
 import React from 'react';
-import { KPI_CONFIG, getKpiConfig, calcCompletion, calcDeviation, formatKpiValue, getStatusColor } from '../utils/calculations';
+import { KPI_CONFIG, getKpiConfig, getKpiConfigFromExclusions, calcCompletion, calcDeviation, formatKpiValue, getStatusColor } from '../utils/calculations';
 
 const STATUS_COLOR = {
   green:  'border-green-400 bg-green-50',
@@ -14,9 +14,14 @@ const PCT_COLOR = {
   gray: 'text-gray-400'
 };
 
-export default function KPIGrid({ plan, fact, mode = 'both', storeNumber, hasGold }) {
-  let config = storeNumber ? getKpiConfig(storeNumber) : KPI_CONFIG;
-  if (hasGold === false) config = config.filter(k => k.key !== 'gold_qty');
+export default function KPIGrid({ plan, fact, mode = 'both', storeNumber, hasGold, kpiExclusions }) {
+  let config;
+  if (kpiExclusions !== undefined) {
+    config = getKpiConfigFromExclusions(kpiExclusions);
+  } else {
+    config = storeNumber ? getKpiConfig(storeNumber) : KPI_CONFIG;
+    if (hasGold === false) config = config.filter(k => k.key !== 'gold_qty');
+  }
   return (
     <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
       {config.map(kpi => {
@@ -74,9 +79,14 @@ export default function KPIGrid({ plan, fact, mode = 'both', storeNumber, hasGol
   );
 }
 
-export function KPIInputGrid({ values, onChange, disabled, storeNumber, hasGold, isPlan = true }) {
-  let config = storeNumber ? getKpiConfig(storeNumber) : KPI_CONFIG;
-  if (hasGold === false) config = config.filter(k => k.key !== 'gold_qty');
+export function KPIInputGrid({ values, onChange, disabled, storeNumber, hasGold, isPlan = true, kpiExclusions }) {
+  let config;
+  if (kpiExclusions !== undefined) {
+    config = getKpiConfigFromExclusions(kpiExclusions);
+  } else {
+    config = storeNumber ? getKpiConfig(storeNumber) : KPI_CONFIG;
+    if (hasGold === false) config = config.filter(k => k.key !== 'gold_qty');
+  }
   return (
     <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
       {config.map(kpi => {

@@ -13,6 +13,7 @@ import FactForm from './pages/FactForm';
 import DirectorHistory from './pages/DirectorHistory';
 import DirectorReport from './pages/DirectorReport';
 import Ratings from './pages/Ratings';
+import StoreManagement from './pages/StoreManagement';
 
 function useAuth() {
   const token = localStorage.getItem('token');
@@ -123,6 +124,9 @@ export default function App() {
       } />
       <Route path="/admin/report" element={
         <ProtectedRoute requiredRole="admin"><DirectorReport /></ProtectedRoute>
+      } />
+      <Route path="/admin/stores" element={
+        <ProtectedRoute requiredRole="admin"><StoreManagement /></ProtectedRoute>
       } />
 
       {/* Director routes */}

@@ -1,9 +1,13 @@
 const express = require('express');
-const { dbAll, dbGet } = require('../db/database');
+const { dbAll, dbGet, dbRun } = require('../db/database');
 const { authMiddleware, adminOnly } = require('../middleware/auth');
 const { calcEngagementIndex, getEngagementLabel, calcKpiCompletion } = require('../utils/engagementIndex');
 
 const router = express.Router();
+
+function parseExclusions(val) {
+  try { return JSON.parse(val || '[]'); } catch { return []; }
+}
 
 function calcDayCompletion(plan, fact) {
   if (!plan || !fact) return null;
@@ -47,7 +51,9 @@ router.get('/', authMiddleware, async (req, res) => {
       return {
         id: store.id,
         store_number: store.store_number,
+        name: store.name || null,
         director_name: store.director_name || '—',
+        kpi_exclusions: parseExclusions(store.kpi_exclusions),
         plan_submitted: !!plan,
         plan_late: plan?.is_late || false,
         plan_time: plan?.submitted_at || null,
@@ -108,6 +114,7 @@ router.get('/:id', authMiddleware, async (req, res) => {
 
     res.json({
       ...store,
+      kpi_exclusions: parseExclusions(store.kpi_exclusions),
       engagement: { index, label, color, breakdown, stats },
       history: recentDays.map(r => ({ ...r, date: toDateStr(r.date) }))
     });
@@ -160,6 +167,36 @@ router.get('/:id/history', authMiddleware, async (req, res) => {
     res.json(rows.map(r => ({ ...r, date: toDateStr(r.date) })));
   } catch (e) {
     res.status(500).json({ error: 'Ошибка сервера' });
+  }
+});
+
+router.post('/', authMiddleware, adminOnly, async (req, res) => {
+  try {
+    const { store_number, name, kpi_exclusions = [] } = req.body;
+    if (!store_number) return res.status(400).json({ error: 'Укажите номер магазина' });
+    const existing = await dbGet('SELECT id FROM stores WHERE store_number = ?', [String(store_number)]);
+    if (existing) return res.status(409).json({ error: 'Магазин с таким номером уже существует' });
+    await dbRun('INSERT INTO stores (store_number, name, kpi_exclusions) VALUES (?, ?, ?)',
+      [String(store_number), name || null, JSON.stringify(kpi_exclusions)]);
+    const store = await dbGet('SELECT * FROM stores WHERE store_number = ?', [String(store_number)]);
+    res.status(201).json({ ...store, kpi_exclusions: parseExclusions(store.kpi_exclusions) });
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ error: 'Ошибка сервера', detail: e.message });
+  }
+});
+
+router.put('/:id', authMiddleware, adminOnly, async (req, res) => {
+  try {
+    const storeId = parseInt(req.params.id);
+    const { name, kpi_exclusions } = req.body;
+    if (name !== undefined) await dbRun('UPDATE stores SET name = ? WHERE id = ?', [name, storeId]);
+    if (kpi_exclusions !== undefined) await dbRun('UPDATE stores SET kpi_exclusions = ? WHERE id = ?', [JSON.stringify(kpi_exclusions), storeId]);
+    const store = await dbGet('SELECT * FROM stores WHERE id = ?', [storeId]);
+    res.json({ ...store, kpi_exclusions: parseExclusions(store.kpi_exclusions) });
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ error: 'Ошибка сервера', detail: e.message });
   }
 });
 

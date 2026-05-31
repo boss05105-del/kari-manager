@@ -91,6 +91,7 @@ export default function StoreCard() {
   const today = new Date().toISOString().split('T')[0];
   const todayPlan = store.history?.find(h => (h.date || String(h.plan_date).slice(0,10)) === today);
   const storeHasGold = !NO_GOLD_STORES.has(String(store.store_number));
+  const storeKpiExclusions = store.kpi_exclusions ?? null;
   const monthStart = today.slice(0, 7); // "YYYY-MM"
   const violations = store.history?.filter(h => {
     const d = h.date || String(h.plan_date).slice(0, 10);
@@ -231,7 +232,7 @@ export default function StoreCard() {
                 <KPIGrid
                   plan={todayPlan}
                   storeNumber={store.store_number}
-                  hasGold={storeHasGold}
+                  hasGold={storeHasGold} kpiExclusions={storeKpiExclusions !== null ? storeKpiExclusions : undefined}
                   fact={{
                     ui_percent: todayPlan.f_ui, gold_qty: todayPlan.f_gold,
                     silver_qty: todayPlan.f_silver, finmoll_qty: todayPlan.f_finmoll,
@@ -360,7 +361,7 @@ export default function StoreCard() {
                   </button>
                   {selectedDay?.plan_date === day.plan_date && (
                     <div className="px-4 pb-4 border-t border-gray-100 space-y-3 pt-3">
-                      <KPIGrid plan={day} fact={fact} storeNumber={store.store_number} hasGold={storeHasGold} />
+                      <KPIGrid plan={day} fact={fact} storeNumber={store.store_number} hasGold={storeHasGold} kpiExclusions={storeKpiExclusions !== null ? storeKpiExclusions : undefined} />
                       {day.comment && <QABlock label="Комментарий к плану" text={day.comment} />}
                       {day.what_helped && (
                         <div className="space-y-2">

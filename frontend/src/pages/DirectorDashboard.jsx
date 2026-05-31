@@ -10,6 +10,7 @@ import PushToggle from '../components/PushToggle';
 
 export default function DirectorDashboard() {
   const user = JSON.parse(localStorage.getItem('user') || '{}');
+  const kpiExclusions = user.kpi_exclusions ?? null;
   const hasGold = !NO_GOLD_STORES.has(String(user.store_number));
   const today = new Date().toISOString().split('T')[0];
   const now = new Date();
@@ -109,7 +110,7 @@ export default function DirectorDashboard() {
               }`}>{avgCompletion}%</span>
             )}
           </div>
-          <KPIGrid plan={todayPlan} fact={todayFact} storeNumber={user.store_number} hasGold={hasGold} />
+          <KPIGrid plan={todayPlan} fact={todayFact} storeNumber={user.store_number} hasGold={hasGold} kpiExclusions={kpiExclusions !== null ? kpiExclusions : undefined} />
         </div>
       )}
 

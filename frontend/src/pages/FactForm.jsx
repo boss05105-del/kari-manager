@@ -7,6 +7,7 @@ import { formatDateTime } from '../utils/dateUtils';
 
 export default function FactForm() {
   const user = JSON.parse(localStorage.getItem('user') || '{}');
+  const kpiExclusions = user.kpi_exclusions ?? null;
   const hasGold = !NO_GOLD_STORES.has(String(user.store_number));
   const today = new Date().toISOString().split('T')[0];
   const now = new Date();
@@ -91,7 +92,7 @@ export default function FactForm() {
       {plan && !fact && (
         <div className="card p-4">
           <h3 className="text-sm font-semibold text-gray-600 mb-3">📝 Ваш план на сегодня</h3>
-          <KPIGrid plan={plan} mode="plan" storeNumber={user.store_number} hasGold={hasGold} />
+          <KPIGrid plan={plan} mode="plan" storeNumber={user.store_number} hasGold={hasGold} kpiExclusions={kpiExclusions !== null ? kpiExclusions : undefined} />
           <p className="text-xs text-gray-400 mt-3">
             Поставлен: {formatDateTime(plan.submitted_at)}
           </p>
@@ -116,7 +117,7 @@ export default function FactForm() {
               </div>
             </div>
           </div>
-          <KPIGrid plan={plan} fact={fact} storeNumber={user.store_number} hasGold={hasGold} />
+          <KPIGrid plan={plan} fact={fact} storeNumber={user.store_number} hasGold={hasGold} kpiExclusions={kpiExclusions !== null ? kpiExclusions : undefined} />
           <div className="space-y-3 pt-2">
             {[
               { key: 'what_helped', label: '✅ Что помогло?' },
@@ -148,7 +149,7 @@ export default function FactForm() {
 
           <div className="card p-5 space-y-4">
             <h3 className="font-semibold text-gray-800">📊 Фактические результаты</h3>
-            <KPIInputGrid values={values} onChange={handleChange} disabled={saving} storeNumber={user.store_number} hasGold={hasGold} isPlan={false} />
+            <KPIInputGrid values={values} onChange={handleChange} disabled={saving} storeNumber={user.store_number} hasGold={hasGold} kpiExclusions={kpiExclusions !== null ? kpiExclusions : undefined} isPlan={false} />
           </div>
 
           <div className="card p-5 space-y-4">

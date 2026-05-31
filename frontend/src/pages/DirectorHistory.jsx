@@ -12,6 +12,7 @@ const PERIODS = [
 
 export default function DirectorHistory() {
   const user = JSON.parse(localStorage.getItem('user') || '{}');
+  const kpiExclusions = user.kpi_exclusions ?? null;
   const hasGold = !NO_GOLD_STORES.has(String(user.store_number));
   const [history, setHistory] = useState([]);
   const [period, setPeriod] = useState('month');
@@ -85,7 +86,7 @@ export default function DirectorHistory() {
               </button>
               {open && (
                 <div className="px-4 pb-4 border-t border-gray-100 pt-3 space-y-3">
-                  <KPIGrid plan={planProxy} fact={fact} storeNumber={user.store_number} hasGold={hasGold} />
+                  <KPIGrid plan={planProxy} fact={fact} storeNumber={user.store_number} hasGold={hasGold} kpiExclusions={kpiExclusions !== null ? kpiExclusions : undefined} />
                   {day.comment && (
                     <div>
                       <p className="text-xs font-semibold text-gray-500 mb-1">Комментарий к плану</p>

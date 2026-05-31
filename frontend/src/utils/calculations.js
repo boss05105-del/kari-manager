@@ -8,6 +8,12 @@ const STORE_EXCLUDED_KPIS = {
   '11092': new Set(['gold_qty', 'ui_percent', 'silver_qty'])
 };
 
+export function getKpiConfigFromExclusions(exclusions = []) {
+  if (!exclusions || exclusions.length === 0) return KPI_CONFIG;
+  const excSet = new Set(exclusions);
+  return KPI_CONFIG.filter(k => !excSet.has(k.key));
+}
+
 export function getKpiConfig(storeNumber) {
   const sn = String(storeNumber);
   if (STORE_EXCLUDED_KPIS[sn]) {

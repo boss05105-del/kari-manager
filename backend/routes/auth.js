@@ -20,7 +20,7 @@ router.post('/login', async (req, res) => {
     }
 
     const user = await dbGet(`
-      SELECT u.*, s.store_number, s.id as store_id
+      SELECT u.*, s.store_number, s.id as store_id, s.kpi_exclusions
       FROM users u
       LEFT JOIN stores s ON s.director_id = u.id
       WHERE u.username = $1
@@ -49,6 +49,7 @@ router.post('/login', async (req, res) => {
         store_id: user.store_id,
         store_number: user.store_number,
         has_gold: !NO_GOLD_STORES.has(String(user.store_number)),
+        kpi_exclusions: (() => { try { return JSON.parse(user.kpi_exclusions || '[]'); } catch { return []; } })(),
         profile_completed: user.profile_completed
       }
     });
@@ -64,7 +65,7 @@ router.post('/login-store', async (req, res) => {
     if (!store_number) return res.status(400).json({ error: 'Введите номер магазина' });
 
     const user = await dbGet(`
-      SELECT u.*, s.store_number, s.id as store_id
+      SELECT u.*, s.store_number, s.id as store_id, s.kpi_exclusions
       FROM users u
       JOIN stores s ON s.director_id = u.id
       WHERE s.store_number = $1 AND u.role = 'director'
@@ -88,6 +89,7 @@ router.post('/login-store', async (req, res) => {
         store_id: user.store_id,
         store_number: user.store_number,
         has_gold: !NO_GOLD_STORES.has(String(user.store_number)),
+        kpi_exclusions: (() => { try { return JSON.parse(user.kpi_exclusions || '[]'); } catch { return []; } })(),
         profile_completed: user.profile_completed
       }
     });

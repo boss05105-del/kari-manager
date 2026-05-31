@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import api from '../api/client';
 import { KPIInputGrid } from '../components/KPIGrid';
-import { KPI_CONFIG, getKpiConfig, NO_GOLD_STORES } from '../utils/calculations';
+import { KPI_CONFIG, getKpiConfig, getKpiConfigFromExclusions, NO_GOLD_STORES } from '../utils/calculations';
 import { formatDateTime } from '../utils/dateUtils';
 
 export default function PlanForm() {
   const user = JSON.parse(localStorage.getItem('user') || '{}');
+  const kpiExclusions = user.kpi_exclusions ?? null;
   const hasGold = !NO_GOLD_STORES.has(String(user.store_number));
   const today = new Date().toISOString().split('T')[0];
   const now = new Date();
@@ -38,7 +39,7 @@ export default function PlanForm() {
   async function handleSubmit(e) {
     e.preventDefault();
     setError('');
-    const config = getKpiConfig(user.store_number);
+    const config = kpiExclusions !== null ? getKpiConfigFromExclusions(kpiExclusions) : getKpiConfig(user.store_number);
     for (const kpi of config) {
       if (kpi.min != null) {
         const val = parseFloat(values[kpi.key]);
@@ -87,7 +88,7 @@ export default function PlanForm() {
             </div>
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-            {getKpiConfig(user.store_number).map(kpi => (
+            {(kpiExclusions !== null ? getKpiConfigFromExclusions(kpiExclusions) : getKpiConfig(user.store_number)).map(kpi => (
               <div key={kpi.key} className="bg-gray-50 rounded-lg p-3">
                 <p className="text-xs text-gray-500 mb-1">{kpi.label}</p>
                 <p className="font-semibold text-gray-800">
@@ -124,7 +125,7 @@ export default function PlanForm() {
 
           <div className="card p-5 space-y-4">
             <h3 className="font-semibold text-gray-800">📊 KPI на сегодня</h3>
-            <KPIInputGrid values={values} onChange={handleChange} disabled={saving} storeNumber={user.store_number} hasGold={hasGold} />
+            <KPIInputGrid values={values} onChange={handleChange} disabled={saving} storeNumber={user.store_number} hasGold={hasGold} kpiExclusions={kpiExclusions !== null ? kpiExclusions : undefined} />
           </div>
 
           <div className="card p-5">

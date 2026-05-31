@@ -8,7 +8,8 @@ const NAV_ADMIN = [
   { to: '/admin/analytics', label: 'Аналитика', icon: '📈' },
   { to: '/admin/ratings', label: 'Рейтинг', icon: '🏆' },
   { to: '/admin/overdue', label: 'Просрочки', icon: '⚠️' },
-  { to: '/admin/report', label: 'Отчёт', icon: '📋' }
+  { to: '/admin/report', label: 'Отчёт', icon: '📋' },
+  { to: '/admin/stores', label: 'Магазины', icon: '🏪' }
 ];
 
 const NAV_DIRECTOR = [
