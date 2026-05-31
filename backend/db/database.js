@@ -129,6 +129,15 @@ async function initDatabase() {
     CREATE INDEX IF NOT EXISTS idx_push_user ON push_subscriptions(user_id);
   `);
 
+  // Migrations: safely add columns that may be missing in existing DBs
+  const migrations = [
+    `ALTER TABLE daily_plans ADD COLUMN IF NOT EXISTS mp_install_qty REAL`,
+    `ALTER TABLE daily_facts ADD COLUMN IF NOT EXISTS mp_install_qty REAL`,
+  ];
+  for (const sql of migrations) {
+    await pool.query(sql).catch(() => {});
+  }
+
   console.log('Database initialized');
 }
 
