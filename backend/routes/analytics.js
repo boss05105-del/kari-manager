@@ -469,7 +469,7 @@ router.get('/weekly-report', authMiddleware, async (req, res) => {
     const cursor = new Date(monday);
     const endDate = new Date(Math.min(sunday, now));
     while (cursor <= endDate) {
-      if (cursor.getDay() !== 0) workingDays.push(cursor.toISOString().split('T')[0]);
+      workingDays.push(cursor.toISOString().split('T')[0]);
       cursor.setDate(cursor.getDate() + 1);
     }
 
