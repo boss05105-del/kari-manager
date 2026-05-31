@@ -26,7 +26,7 @@ router.get('/', authMiddleware, async (req, res) => {
     const today = new Date().toISOString().split('T')[0];
     const stores = await dbAll(`
       SELECT s.*, u.full_name as director_name, u.id as director_user_id
-      FROM stores s LEFT JOIN users u ON u.id = s.director_id ORDER BY s.store_number
+      FROM stores s LEFT JOIN users u ON u.id = s.director_id ORDER BY s.store_number::integer
     `);
 
     const result = await Promise.all(stores.map(async (store) => {
