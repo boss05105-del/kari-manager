@@ -2,33 +2,17 @@ import React, { useState, useEffect } from 'react';
 import api from '../api/client';
 import { KPIInputGrid } from '../components/KPIGrid';
 import { KPI_CONFIG, getKpiConfig, NO_GOLD_STORES } from '../utils/calculations';
-import { formatDateTime, formatDate } from '../utils/dateUtils';
-
-function getUpcomingDays(n = 7) {
-  const days = [];
-  for (let i = 0; i < n; i++) {
-    const d = new Date();
-    d.setDate(d.getDate() + i);
-    if (d.getDay() !== 0) { // skip Sundays
-      days.push(d.toISOString().split('T')[0]);
-    }
-  }
-  return days;
-}
-
-const DAY_NAMES = ['Вс','Пн','Вт','Ср','Чт','Пт','Сб'];
+import { formatDateTime } from '../utils/dateUtils';
 
 export default function PlanForm() {
   const user = JSON.parse(localStorage.getItem('user') || '{}');
   const hasGold = !NO_GOLD_STORES.has(String(user.store_number));
   const today = new Date().toISOString().split('T')[0];
   const now = new Date();
-  const moscowNow = new Date(now.toLocaleString('en-US', { timeZone: 'Europe/Moscow' }));
-  const moscowHour = moscowNow.getHours();
+  const moscowHour = new Date(now.toLocaleString('en-US', { timeZone: 'Europe/Moscow' })).getHours();
+  const isLateWarning = moscowHour >= 10;
+  const isLate = moscowHour >= 11;
 
-  const upcomingDays = getUpcomingDays(7);
-
-  const [selectedDate, setSelectedDate] = useState(today);
   const [plan, setPlan] = useState(null);
   const [values, setValues] = useState({});
   const [comment, setComment] = useState('');
@@ -37,21 +21,13 @@ export default function PlanForm() {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
 
-  useEffect(() => {
-    loadPlan();
-    setValues({});
-    setComment('');
-    setError('');
-    setSuccess('');
-  }, [selectedDate]);
+  useEffect(() => { loadPlan(); }, []);
 
   async function loadPlan() {
-    setLoading(true);
     try {
-      const data = await api.get(`/plans/${user.store_id}/${selectedDate}`);
+      const data = await api.get(`/plans/${user.store_id}/${today}`);
       if (data) setPlan(data);
-      else setPlan(null);
-    } catch { setPlan(null); }
+    } catch {}
     finally { setLoading(false); }
   }
 
@@ -59,15 +35,9 @@ export default function PlanForm() {
     setValues(v => ({ ...v, [key]: val === '' ? '' : val }));
   }
 
-  const isToday = selectedDate === today;
-  const isFuture = selectedDate > today;
-  const isLateWarning = isToday && moscowHour >= 10;
-  const isLate = isToday && moscowHour >= 11;
-
   async function handleSubmit(e) {
     e.preventDefault();
     setError('');
-    // Validate minimums
     const config = getKpiConfig(user.store_number);
     for (const kpi of config) {
       if (kpi.min != null) {
@@ -80,9 +50,9 @@ export default function PlanForm() {
     }
     setSaving(true);
     try {
-      const payload = { store_id: user.store_id, plan_date: selectedDate, comment, ...values };
+      const payload = { store_id: user.store_id, plan_date: today, comment, ...values };
       await api.post('/plans', payload);
-      setSuccess(`✅ План на ${formatDate(selectedDate)} зафиксирован`);
+      setSuccess('✅ План зафиксирован');
       await loadPlan();
     } catch (err) {
       setError(err.error || 'Ошибка сохранения');
@@ -91,7 +61,9 @@ export default function PlanForm() {
     }
   }
 
-  const todayFormatted = new Date(selectedDate + 'T12:00:00').toLocaleDateString('ru-RU', {
+  if (loading) return <div className="text-center py-12 text-gray-400">Загрузка...</div>;
+
+  const todayFormatted = new Date().toLocaleDateString('ru-RU', {
     weekday: 'long', day: 'numeric', month: 'long'
   });
 
@@ -102,45 +74,14 @@ export default function PlanForm() {
         <p className="text-gray-500 text-sm mt-0.5 capitalize">{todayFormatted}</p>
       </div>
 
-      {/* Date selector */}
-      <div className="card p-3">
-        <p className="text-xs text-gray-500 mb-2 font-medium">Выберите дату:</p>
-        <div className="flex gap-2 overflow-x-auto pb-1">
-          {upcomingDays.map(d => {
-            const dt = new Date(d + 'T12:00:00');
-            const dayName = DAY_NAMES[dt.getDay()];
-            const dayNum = dt.getDate();
-            const isSelected = d === selectedDate;
-            const isTd = d === today;
-            return (
-              <button
-                key={d}
-                onClick={() => setSelectedDate(d)}
-                className={`flex-shrink-0 flex flex-col items-center px-3 py-2 rounded-xl text-sm font-medium transition-colors min-w-[56px] ${
-                  isSelected
-                    ? 'bg-purple-700 text-white'
-                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                }`}
-              >
-                <span className="text-xs">{isTd ? 'Сег.' : dayName}</span>
-                <span className="text-base font-bold">{dayNum}</span>
-              </button>
-            );
-          })}
-        </div>
-      </div>
-
-      {loading ? (
-        <div className="text-center py-8 text-gray-400">Загрузка...</div>
-      ) : plan ? (
-        /* Already submitted */
+      {plan ? (
         <div className="card p-5">
           <div className="flex items-center gap-3 mb-4">
             <span className="text-2xl">🔒</span>
             <div>
               <h3 className="font-semibold text-gray-800">План зафиксирован</h3>
               <p className="text-sm text-gray-500">
-                {formatDateTime(plan.submitted_at)}
+                Время постановки: {formatDateTime(plan.submitted_at)}
                 {plan.is_late ? ' · ⚠️ Просрочка (после 11:00)' : ' · ✓ Вовремя'}
               </p>
             </div>
@@ -163,17 +104,8 @@ export default function PlanForm() {
           )}
         </div>
       ) : (
-        /* Form */
         <form onSubmit={handleSubmit} className="space-y-5">
-          {isFuture && (
-            <div className="bg-blue-50 border border-blue-200 rounded-xl p-3 flex items-center gap-2">
-              <span>📅</span>
-              <p className="text-sm text-blue-800">
-                Вы ставите план заранее на <strong>{formatDate(selectedDate)}</strong> — просрочки не будет
-              </p>
-            </div>
-          )}
-          {isLateWarning && !isLate && isToday && (
+          {isLateWarning && !isLate && (
             <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-3 flex items-center gap-2">
               <span>⚠️</span>
               <p className="text-sm text-yellow-800">
@@ -181,7 +113,7 @@ export default function PlanForm() {
               </p>
             </div>
           )}
-          {isLate && isToday && (
+          {isLate && (
             <div className="bg-red-50 border border-red-200 rounded-xl p-3 flex items-center gap-2">
               <span>🔴</span>
               <p className="text-sm text-red-700">
@@ -191,7 +123,7 @@ export default function PlanForm() {
           )}
 
           <div className="card p-5 space-y-4">
-            <h3 className="font-semibold text-gray-800">📊 KPI на {formatDate(selectedDate)}</h3>
+            <h3 className="font-semibold text-gray-800">📊 KPI на сегодня</h3>
             <KPIInputGrid values={values} onChange={handleChange} disabled={saving} storeNumber={user.store_number} hasGold={hasGold} />
           </div>
 
@@ -210,23 +142,17 @@ export default function PlanForm() {
           </div>
 
           {error && (
-            <div className="bg-red-50 border border-red-200 rounded-xl p-3 text-red-700 text-sm">
-              {error}
-            </div>
+            <div className="bg-red-50 border border-red-200 rounded-xl p-3 text-red-700 text-sm">{error}</div>
           )}
           {success && (
-            <div className="bg-green-50 border border-green-200 rounded-xl p-3 text-green-700 text-sm">
-              {success}
-            </div>
+            <div className="bg-green-50 border border-green-200 rounded-xl p-3 text-green-700 text-sm">{success}</div>
           )}
 
           <button type="submit" disabled={saving} className="btn-primary w-full py-3 text-base">
-            {saving ? 'Сохранение...' : `🔒 Зафиксировать план на ${formatDate(selectedDate)}`}
+            {saving ? 'Сохранение...' : '🔒 Зафиксировать план'}
           </button>
 
-          <p className="text-xs text-center text-gray-400">
-            После сохранения план нельзя изменить
-          </p>
+          <p className="text-xs text-center text-gray-400">После сохранения план нельзя изменить</p>
         </form>
       )}
     </div>
