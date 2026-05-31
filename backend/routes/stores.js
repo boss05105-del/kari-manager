@@ -71,7 +71,7 @@ router.get('/', authMiddleware, async (req, res) => {
       };
     }));
 
-    result.sort((a, b) => b.engagement_index - a.engagement_index);
+    result.sort((a, b) => parseInt(a.store_number) - parseInt(b.store_number));
     result.forEach((s, i) => { s.rank = i + 1; });
     res.json(result);
   } catch (e) {
