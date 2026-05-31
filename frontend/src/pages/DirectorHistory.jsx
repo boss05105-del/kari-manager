@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import api from '../api/client';
 import KPIGrid from '../components/KPIGrid';
 import { formatDate, formatDateTime } from '../utils/dateUtils';
-import { calcAvgCompletion } from '../utils/calculations';
+import { calcAvgCompletion, NO_GOLD_STORES } from '../utils/calculations';
 
 const PERIODS = [
   { key: 'week', label: 'Неделя' },
@@ -12,6 +12,7 @@ const PERIODS = [
 
 export default function DirectorHistory() {
   const user = JSON.parse(localStorage.getItem('user') || '{}');
+  const hasGold = !NO_GOLD_STORES.has(String(user.store_number));
   const [history, setHistory] = useState([]);
   const [period, setPeriod] = useState('month');
   const [selected, setSelected] = useState(null);
@@ -84,7 +85,7 @@ export default function DirectorHistory() {
               </button>
               {open && (
                 <div className="px-4 pb-4 border-t border-gray-100 pt-3 space-y-3">
-                  <KPIGrid plan={planProxy} fact={fact} storeNumber={user.store_number} hasGold={user.has_gold} />
+                  <KPIGrid plan={planProxy} fact={fact} storeNumber={user.store_number} hasGold={hasGold} />
                   {day.comment && (
                     <div>
                       <p className="text-xs font-semibold text-gray-500 mb-1">Комментарий к плану</p>

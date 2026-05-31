@@ -15,9 +15,8 @@ const PCT_COLOR = {
 };
 
 export default function KPIGrid({ plan, fact, mode = 'both', storeNumber, hasGold }) {
-  const config = storeNumber
-    ? getKpiConfig(storeNumber)
-    : (hasGold === false ? KPI_CONFIG.filter(k => k.key !== 'gold_qty') : KPI_CONFIG);
+  let config = storeNumber ? getKpiConfig(storeNumber) : KPI_CONFIG;
+  if (hasGold === false) config = config.filter(k => k.key !== 'gold_qty');
   return (
     <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
       {config.map(kpi => {
@@ -76,9 +75,8 @@ export default function KPIGrid({ plan, fact, mode = 'both', storeNumber, hasGol
 }
 
 export function KPIInputGrid({ values, onChange, disabled, storeNumber, hasGold, isPlan = true }) {
-  const config = storeNumber
-    ? getKpiConfig(storeNumber)
-    : (hasGold === false ? KPI_CONFIG.filter(k => k.key !== 'gold_qty') : KPI_CONFIG);
+  let config = storeNumber ? getKpiConfig(storeNumber) : KPI_CONFIG;
+  if (hasGold === false) config = config.filter(k => k.key !== 'gold_qty');
   return (
     <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
       {config.map(kpi => {

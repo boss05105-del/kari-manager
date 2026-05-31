@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import api from '../api/client';
 import { KPIInputGrid } from '../components/KPIGrid';
-import { KPI_CONFIG, getKpiConfig } from '../utils/calculations';
+import { KPI_CONFIG, getKpiConfig, NO_GOLD_STORES } from '../utils/calculations';
 import { formatDateTime } from '../utils/dateUtils';
 
 export default function PlanForm() {
   const user = JSON.parse(localStorage.getItem('user') || '{}');
+  const hasGold = !NO_GOLD_STORES.has(String(user.store_number));
   const today = new Date().toISOString().split('T')[0];
   const now = new Date();
   const moscowHour = new Date(now.toLocaleString('en-US', { timeZone: 'Europe/Moscow' })).getHours();
@@ -130,7 +131,7 @@ export default function PlanForm() {
 
           <div className="card p-5 space-y-4">
             <h3 className="font-semibold text-gray-800">📊 KPI на сегодня</h3>
-            <KPIInputGrid values={values} onChange={handleChange} disabled={saving} storeNumber={user.store_number} hasGold={user.has_gold} />
+            <KPIInputGrid values={values} onChange={handleChange} disabled={saving} storeNumber={user.store_number} hasGold={hasGold} />
           </div>
 
           <div className="card p-5">

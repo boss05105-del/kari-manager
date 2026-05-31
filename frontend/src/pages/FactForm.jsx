@@ -2,11 +2,12 @@ import React, { useState, useEffect } from 'react';
 import api from '../api/client';
 import KPIGrid from '../components/KPIGrid';
 import { KPIInputGrid } from '../components/KPIGrid';
-import { KPI_CONFIG } from '../utils/calculations';
+import { KPI_CONFIG, NO_GOLD_STORES } from '../utils/calculations';
 import { formatDateTime } from '../utils/dateUtils';
 
 export default function FactForm() {
   const user = JSON.parse(localStorage.getItem('user') || '{}');
+  const hasGold = !NO_GOLD_STORES.has(String(user.store_number));
   const today = new Date().toISOString().split('T')[0];
   const now = new Date();
   const moscowNow = new Date(now.toLocaleString('en-US', { timeZone: 'Europe/Moscow' }));
@@ -90,7 +91,7 @@ export default function FactForm() {
       {plan && !fact && (
         <div className="card p-4">
           <h3 className="text-sm font-semibold text-gray-600 mb-3">📝 Ваш план на сегодня</h3>
-          <KPIGrid plan={plan} mode="plan" storeNumber={user.store_number} hasGold={user.has_gold} />
+          <KPIGrid plan={plan} mode="plan" storeNumber={user.store_number} hasGold={hasGold} />
           <p className="text-xs text-gray-400 mt-3">
             Поставлен: {formatDateTime(plan.submitted_at)}
           </p>
@@ -115,7 +116,7 @@ export default function FactForm() {
               </div>
             </div>
           </div>
-          <KPIGrid plan={plan} fact={fact} storeNumber={user.store_number} hasGold={user.has_gold} />
+          <KPIGrid plan={plan} fact={fact} storeNumber={user.store_number} hasGold={hasGold} />
           <div className="space-y-3 pt-2">
             {[
               { key: 'what_helped', label: '✅ Что помогло?' },
@@ -147,7 +148,7 @@ export default function FactForm() {
 
           <div className="card p-5 space-y-4">
             <h3 className="font-semibold text-gray-800">📊 Фактические результаты</h3>
-            <KPIInputGrid values={values} onChange={handleChange} disabled={saving} storeNumber={user.store_number} hasGold={user.has_gold} isPlan={false} />
+            <KPIInputGrid values={values} onChange={handleChange} disabled={saving} storeNumber={user.store_number} hasGold={hasGold} isPlan={false} />
           </div>
 
           <div className="card p-5 space-y-4">

@@ -5,11 +5,12 @@ import { EngagementBar } from '../components/EngagementBadge';
 import KPIGrid from '../components/KPIGrid';
 import { CompletionLineChart } from '../components/Charts';
 import { formatDateTime, shortDate } from '../utils/dateUtils';
-import { calcAvgCompletion } from '../utils/calculations';
+import { calcAvgCompletion, NO_GOLD_STORES } from '../utils/calculations';
 import PushToggle from '../components/PushToggle';
 
 export default function DirectorDashboard() {
   const user = JSON.parse(localStorage.getItem('user') || '{}');
+  const hasGold = !NO_GOLD_STORES.has(String(user.store_number));
   const today = new Date().toISOString().split('T')[0];
   const now = new Date();
   const moscowHour = new Date(now.toLocaleString('en-US', { timeZone: 'Europe/Moscow' })).getHours();
@@ -108,7 +109,7 @@ export default function DirectorDashboard() {
               }`}>{avgCompletion}%</span>
             )}
           </div>
-          <KPIGrid plan={todayPlan} fact={todayFact} storeNumber={user.store_number} hasGold={user.has_gold} />
+          <KPIGrid plan={todayPlan} fact={todayFact} storeNumber={user.store_number} hasGold={hasGold} />
         </div>
       )}
 
