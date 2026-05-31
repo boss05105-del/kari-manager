@@ -79,7 +79,7 @@ router.post('/', authMiddleware, async (req, res) => {
     res.status(201).json(saved);
   } catch (e) {
     console.error(e);
-    res.status(500).json({ error: 'Ошибка сервера' });
+    res.status(500).json({ error: 'Ошибка сервера', detail: e.message });
   }
 });
 

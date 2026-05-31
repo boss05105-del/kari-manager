@@ -64,7 +64,7 @@ export default function StoreCard() {
       setPlanComment('');
       await loadStore();
     } catch (err) {
-      setPlanError(err.error || 'Ошибка сохранения');
+      setPlanError((err.error || 'Ошибка сохранения') + (err.detail ? `: ${err.detail}` : ''));
     } finally {
       setPlanSaving(false);
     }
