@@ -1,4 +1,5 @@
 const express = require('express');
+const bcrypt = require('bcryptjs');
 const { dbAll, dbGet, dbRun } = require('../db/database');
 const { authMiddleware, adminOnly } = require('../middleware/auth');
 const { calcEngagementIndex, getEngagementLabel, calcKpiCompletion } = require('../utils/engagementIndex');
@@ -176,9 +177,21 @@ router.post('/', authMiddleware, adminOnly, async (req, res) => {
     if (!store_number) return res.status(400).json({ error: 'Укажите номер магазина' });
     const existing = await dbGet('SELECT id FROM stores WHERE store_number = ?', [String(store_number)]);
     if (existing) return res.status(409).json({ error: 'Магазин с таким номером уже существует' });
+
+    // Create store
     await dbRun('INSERT INTO stores (store_number, name, kpi_exclusions) VALUES (?, ?, ?)',
       [String(store_number), name || null, JSON.stringify(kpi_exclusions)]);
     const store = await dbGet('SELECT * FROM stores WHERE store_number = ?', [String(store_number)]);
+
+    // Auto-create director user (login by store number requires a user record)
+    const username = `dir${store_number}`;
+    const tempPassword = `store${store_number}`;
+    const hashed = await bcrypt.hash(tempPassword, 10);
+    await dbRun(`INSERT INTO users (username, password, role, full_name, store_id, profile_completed) VALUES (?, ?, 'director', ?, ?, 0)`,
+      [username, hashed, `Директор ${store_number}`, store.id]);
+    const newUser = await dbGet('SELECT id FROM users WHERE username = ?', [username]);
+    await dbRun('UPDATE stores SET director_id = ? WHERE id = ?', [newUser.id, store.id]);
+
     res.status(201).json({ ...store, kpi_exclusions: parseExclusions(store.kpi_exclusions) });
   } catch (e) {
     console.error(e);

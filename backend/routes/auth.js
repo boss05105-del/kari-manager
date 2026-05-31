@@ -64,12 +64,30 @@ router.post('/login-store', async (req, res) => {
     const { store_number } = req.body;
     if (!store_number) return res.status(400).json({ error: 'Введите номер магазина' });
 
-    const user = await dbGet(`
+    let user = await dbGet(`
       SELECT u.*, s.store_number, s.id as store_id, s.kpi_exclusions
       FROM users u
       JOIN stores s ON s.director_id = u.id
       WHERE s.store_number = $1 AND u.role = 'director'
     `, [String(store_number).trim()]);
+
+    // If store exists but has no director yet — auto-create one
+    if (!user) {
+      const store = await dbGet('SELECT * FROM stores WHERE store_number = ?', [String(store_number).trim()]);
+      if (!store) return res.status(404).json({ error: 'Магазин не найден' });
+      const bcrypt = require('bcryptjs');
+      const username = `dir${store_number}`;
+      const hashed = await bcrypt.hash(`store${store_number}`, 10);
+      await dbRun(`INSERT INTO users (username, password, role, full_name, store_id, profile_completed) VALUES (?, ?, 'director', ?, ?, 0)`,
+        [username, hashed, `Директор ${store_number}`, store.id]);
+      const newUser = await dbGet('SELECT id FROM users WHERE username = ?', [username]);
+      await dbRun('UPDATE stores SET director_id = ? WHERE id = ?', [newUser.id, store.id]);
+      user = await dbGet(`
+        SELECT u.*, s.store_number, s.id as store_id, s.kpi_exclusions
+        FROM users u JOIN stores s ON s.director_id = u.id
+        WHERE s.store_number = $1 AND u.role = 'director'
+      `, [String(store_number).trim()]);
+    }
 
     if (!user) return res.status(404).json({ error: 'Магазин не найден' });
 
