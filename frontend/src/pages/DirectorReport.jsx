@@ -66,14 +66,7 @@ function dateToWeekStr(date) {
 }
 
 function getDefaultWeek() {
-  const now = new Date();
-  // If today is Mon (1) or Tue (2) — default to last week (current week has little data)
-  if (now.getDay() === 1 || now.getDay() === 2) {
-    const lastWeek = new Date(now);
-    lastWeek.setDate(now.getDate() - 7);
-    return dateToWeekStr(lastWeek);
-  }
-  return dateToWeekStr(now);
+  return dateToWeekStr(new Date());
 }
 
 function shiftWeek(weekStr, delta) {
