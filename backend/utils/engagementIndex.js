@@ -2,7 +2,7 @@ const { dbAll } = require('../db/database');
 
 const KPI_FIELDS = [
   'ui_percent','gold_qty','silver_qty','finmoll_qty','kari_qty',
-  'yandex_qty','items_per_receipt','conversion_shoes','conversion_insoles','sbp_share'
+  'yandex_qty','items_per_receipt','conversion_shoes','conversion_insoles','sbp_share','mp_install_qty'
 ];
 
 function calcKpiCompletion(plan, fact) {

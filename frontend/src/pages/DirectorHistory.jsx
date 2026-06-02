@@ -51,13 +51,15 @@ export default function DirectorHistory() {
             ui_percent: day.f_ui, gold_qty: day.f_gold, silver_qty: day.f_silver,
             finmoll_qty: day.f_finmoll, kari_qty: day.f_kari, yandex_qty: day.f_yandex,
             items_per_receipt: day.f_items, conversion_shoes: day.f_conv_shoes,
-            conversion_insoles: day.f_conv_insoles, sbp_share: day.f_sbp
+            conversion_insoles: day.f_conv_insoles, sbp_share: day.f_sbp,
+            mp_install_qty: day.f_mp
           };
           const planProxy = {
             ui_percent: day.p_ui, gold_qty: day.p_gold, silver_qty: day.p_silver,
             finmoll_qty: day.p_finmoll, kari_qty: day.p_kari, yandex_qty: day.p_yandex,
             items_per_receipt: day.p_items, conversion_shoes: day.p_conv_shoes,
-            conversion_insoles: day.p_conv_insoles, sbp_share: day.p_sbp
+            conversion_insoles: day.p_conv_insoles, sbp_share: day.p_sbp,
+            mp_install_qty: day.p_mp
           };
           const avg = calcAvgCompletion(planProxy, fact);
           const open = selected === day.date;

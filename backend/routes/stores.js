@@ -151,6 +151,7 @@ router.get('/:id/history', authMiddleware, async (req, res) => {
         p.finmoll_qty as p_finmoll, p.kari_qty as p_kari, p.yandex_qty as p_yandex,
         p.items_per_receipt as p_items, p.conversion_shoes as p_conv_shoes,
         p.conversion_insoles as p_conv_insoles, p.sbp_share as p_sbp,
+        p.mp_install_qty as p_mp,
         p.comment, p.submitted_at as plan_submitted_at, p.is_late as plan_late,
         f.ui_percent as f_ui, f.gold_qty as f_gold, f.silver_qty as f_silver,
         f.finmoll_qty as f_finmoll, f.kari_qty as f_kari, f.yandex_qty as f_yandex,
