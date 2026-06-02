@@ -59,7 +59,7 @@ router.post('/', authMiddleware, async (req, res) => {
       kpis.items_per_receipt || null, kpis.conversion_shoes || null,
       kpis.conversion_insoles || null, kpis.sbp_share || null,
       kpis.mp_install_qty || null,
-      what_helped.trim(), obstacles.trim(), tomorrow_actions.trim(),
+      (what_helped || '').trim(), (obstacles || '').trim(), (tomorrow_actions || '').trim(),
       isLate ? 1 : 0
     ]);
 
@@ -74,7 +74,7 @@ router.post('/', authMiddleware, async (req, res) => {
     res.status(201).json(saved);
   } catch (e) {
     console.error(e);
-    res.status(500).json({ error: 'Ошибка сервера' });
+    res.status(500).json({ error: 'Ошибка сервера', detail: e.message });
   }
 });
 
