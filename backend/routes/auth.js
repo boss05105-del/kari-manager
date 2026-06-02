@@ -77,11 +77,16 @@ router.post('/login-store', async (req, res) => {
       if (!store) return res.status(404).json({ error: 'Магазин не найден' });
       const bcrypt = require('bcryptjs');
       const username = `dir${store_number}`;
-      const hashed = await bcrypt.hash(`store${store_number}`, 10);
-      await dbRun(`INSERT INTO users (username, password, role, full_name, store_id, profile_completed) VALUES (?, ?, 'director', ?, ?, 0)`,
-        [username, hashed, `Директор ${store_number}`, store.id]);
-      const newUser = await dbGet('SELECT id FROM users WHERE username = ?', [username]);
-      await dbRun('UPDATE stores SET director_id = ? WHERE id = ?', [newUser.id, store.id]);
+      // Check if user with this username already exists (avoid duplicate)
+      let existingUser = await dbGet('SELECT id FROM users WHERE username = ?', [username]);
+      if (!existingUser) {
+        const hashed = await bcrypt.hash(`store${store_number}`, 10);
+        await dbRun(`INSERT INTO users (username, password, role, full_name, store_id, profile_completed) VALUES (?, ?, 'director', ?, ?, 0)`,
+          [username, hashed, `Директор ${store_number}`, store.id]);
+        existingUser = await dbGet('SELECT id FROM users WHERE username = ?', [username]);
+      }
+      await dbRun('UPDATE stores SET director_id = ? WHERE id = ?', [existingUser.id, store.id]);
+      await dbRun('UPDATE users SET store_id = ? WHERE id = ?', [store.id, existingUser.id]);
       user = await dbGet(`
         SELECT u.*, s.store_number, s.id as store_id, s.kpi_exclusions
         FROM users u JOIN stores s ON s.director_id = u.id
