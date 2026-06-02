@@ -53,14 +53,38 @@ function CellTooltip({ day, date }) {
   );
 }
 
-function getCurrentWeek() {
-  const now = new Date();
-  const year = now.getFullYear();
+function dateToWeekStr(date) {
+  const d = new Date(date);
+  const year = d.getFullYear();
   const jan4 = new Date(year, 0, 4);
   const startOfW1 = new Date(jan4);
   startOfW1.setDate(jan4.getDate() - ((jan4.getDay() + 6) % 7));
-  const weekNum = Math.floor((now - startOfW1) / (7 * 86400000)) + 1;
+  const weekNum = Math.floor((d - startOfW1) / (7 * 86400000)) + 1;
+  // Handle year boundary
+  if (weekNum < 1) return dateToWeekStr(new Date(year - 1, 11, 28));
   return `${year}-W${String(weekNum).padStart(2, '0')}`;
+}
+
+function getDefaultWeek() {
+  const now = new Date();
+  // If today is Mon (1) or Tue (2) — default to last week (current week has little data)
+  if (now.getDay() === 1 || now.getDay() === 2) {
+    const lastWeek = new Date(now);
+    lastWeek.setDate(now.getDate() - 7);
+    return dateToWeekStr(lastWeek);
+  }
+  return dateToWeekStr(now);
+}
+
+function shiftWeek(weekStr, delta) {
+  // Parse week string, shift by delta weeks
+  const [y, w] = weekStr.split('-W').map(Number);
+  const jan4 = new Date(y, 0, 4);
+  const startOfW1 = new Date(jan4);
+  startOfW1.setDate(jan4.getDate() - ((jan4.getDay() + 6) % 7));
+  const monday = new Date(startOfW1);
+  monday.setDate(startOfW1.getDate() + (w - 1) * 7 + delta * 7);
+  return dateToWeekStr(monday);
 }
 
 export default function DirectorReport() {
@@ -68,7 +92,7 @@ export default function DirectorReport() {
   const defaultMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
   const [period, setPeriod] = useState('month'); // 'month' | 'week'
   const [month, setMonth] = useState(defaultMonth);
-  const [week, setWeek] = useState(getCurrentWeek());
+  const [week, setWeek] = useState(getDefaultWeek());
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [tooltip, setTooltip] = useState(null);
@@ -220,12 +244,24 @@ export default function DirectorReport() {
               className="input text-sm"
             />
           ) : (
-            <input
-              type="week"
-              value={week}
-              onChange={e => setWeek(e.target.value)}
-              className="input text-sm"
-            />
+            <div className="flex items-center gap-1">
+              <button
+                onClick={() => setWeek(w => shiftWeek(w, -1))}
+                className="btn-secondary px-2.5 py-1.5 text-base"
+                title="Предыдущая неделя"
+              >←</button>
+              <input
+                type="week"
+                value={week}
+                onChange={e => e.target.value && setWeek(e.target.value)}
+                className="input text-sm"
+              />
+              <button
+                onClick={() => setWeek(w => shiftWeek(w, 1))}
+                className="btn-secondary px-2.5 py-1.5 text-base"
+                title="Следующая неделя"
+              >→</button>
+            </div>
           )}
           <button onClick={exportExcel} className="btn-primary flex items-center gap-2">
             📥 Скачать Excel
