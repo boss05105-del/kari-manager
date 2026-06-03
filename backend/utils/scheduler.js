@@ -97,6 +97,13 @@ function setupScheduler() {
     }
   }, { timezone: 'Europe/Moscow' });
 
+  // Keep-alive: ping every 14 min to prevent Render free tier from sleeping
+  const https = require('https');
+  const APP_URL = process.env.APP_URL || 'https://kari-manager.onrender.com';
+  cron.schedule('*/14 * * * *', () => {
+    https.get(`${APP_URL}/api/health`).on('error', () => {});
+  });
+
   console.log('Scheduler initialized');
 }
 
