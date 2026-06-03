@@ -28,7 +28,7 @@ export function getKpiConfig(storeNumber) {
 export const KPI_CONFIG = [
   { key: 'ui_percent',         label: 'ЮИ',                    unit: '%',  type: 'percent', min: 5 },
   { key: 'gold_qty',           label: 'Золото',                unit: 'шт', type: 'count' },
-  { key: 'silver_qty',         label: 'Серебро',               unit: 'шт', type: 'count',   min: 5 },
+  { key: 'silver_qty',         label: 'Серебро',               unit: 'шт', type: 'count',   min: 7 },
   { key: 'finmoll_qty',        label: 'Рассрочка Финмолл',     unit: 'шт', type: 'count',   min: 1 },
   { key: 'kari_qty',           label: 'Kari Частями',          unit: 'шт', type: 'count',   min: 1 },
   { key: 'yandex_qty',         label: 'Яндекс Сплит',          unit: 'шт', type: 'count',   min: 1 },
