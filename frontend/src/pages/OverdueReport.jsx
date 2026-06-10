@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import api from '../api/client';
+import { exportOverdueToExcel } from '../utils/exportExcel';
 
 const PERIODS = [
   { key: 'week', label: 'Неделя' },
@@ -26,13 +27,19 @@ export default function OverdueReport() {
           <h1 className="text-2xl font-bold text-gray-900">Отчёт по просрочкам</h1>
           <p className="text-sm text-gray-500 mt-0.5">Нарушения дисциплины по заполнению</p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap">
           {PERIODS.map(p => (
             <button key={p.key} onClick={() => setPeriod(p.key)}
               className={`px-3 py-1.5 rounded-lg text-sm font-medium ${period === p.key ? 'bg-red-600 text-white' : 'btn-secondary'}`}>
               {p.label}
             </button>
           ))}
+          <button
+            onClick={() => data.length && exportOverdueToExcel(data, period)}
+            className="px-3 py-1.5 rounded-lg text-sm font-medium bg-green-600 text-white hover:bg-green-700 transition-colors"
+          >
+            📥 Excel
+          </button>
         </div>
       </div>
 

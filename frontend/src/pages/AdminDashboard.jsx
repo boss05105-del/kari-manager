@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import api from '../api/client';
 import StoreTable from '../components/StoreTable';
 import { NetworkTrendsChart } from '../components/Charts';
+import { exportDashboardToExcel } from '../utils/exportExcel';
 
 export default function AdminDashboard() {
   const [stores, setStores] = useState([]);
@@ -36,9 +37,17 @@ export default function AdminDashboard() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold text-gray-900">Панель управления</h1>
-        <p className="text-gray-500 text-sm mt-0.5 capitalize">{today}</p>
+      <div className="flex items-center justify-between flex-wrap gap-2">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Панель управления</h1>
+          <p className="text-gray-500 text-sm mt-0.5 capitalize">{today}</p>
+        </div>
+        <button
+          onClick={() => stores.length && exportDashboardToExcel(stores)}
+          className="px-3 py-1.5 rounded-lg text-sm font-medium bg-green-600 text-white hover:bg-green-700 transition-colors flex items-center gap-1"
+        >
+          📥 Выгрузить в Excel
+        </button>
       </div>
 
       {/* Summary cards */}

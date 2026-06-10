@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import * as XLSX from 'xlsx';
+import { exportReportToExcel } from '../utils/exportExcel';
 import api from '../api/client';
 import { formatDate } from '../utils/dateUtils';
 
@@ -108,71 +108,8 @@ export default function DirectorReport() {
 
   function exportExcel() {
     if (!data) return;
-    const wb = XLSX.utils.book_new();
-
-    // Sheet 1: Summary per director
-    const summaryRows = [
-      ['Магазин', 'Директор', 'Заполнено %', 'Ср. выполн. %', 'Просрочек план', 'Пропусков план']
-    ];
-    for (const s of data.stores) {
-      summaryRows.push([
-        s.store_number, s.director_name,
-        s.summary.fill_rate, s.summary.avg_completion ?? '—',
-        s.summary.late_plans, s.summary.missing_plans
-      ]);
-    }
-    const ws1 = XLSX.utils.aoa_to_sheet(summaryRows);
-    ws1['!cols'] = [12,30,14,16,16,16].map(w => ({ wch: w }));
-    XLSX.utils.book_append_sheet(wb, ws1, 'Сводка');
-
-    // Sheet 2: Daily detail
-    const kpiKeys = Object.keys(KPI_LABELS);
-    const header = [
-      'Магазин', 'Директор', 'Дата', 'День недели',
-      'Время плана', 'Просрочка плана',
-      'Время факта', 'Просрочка факта',
-      'Ср. выполн. %',
-      ...kpiKeys.flatMap(k => [`${KPI_LABELS[k]} план`, `${KPI_LABELS[k]} факт`, `${KPI_LABELS[k]} %`])
-    ];
-    const detailRows = [header];
-    for (const s of data.stores) {
-      for (const d of data.working_days) {
-        const day = s.days[d];
-        if (!day) continue;
-        const weekday = DAY_NAMES[new Date(d + 'T12:00:00').getDay()];
-        const kpiCols = kpiKeys.flatMap(k => {
-          const v = day.kpis?.[k];
-          return [v?.plan ?? '', v?.fact ?? '', v?.pct ?? ''];
-        });
-        detailRows.push([
-          s.store_number, s.director_name,
-          d.split('-').reverse().join('.'), weekday,
-          day.plan_time || '', day.plan_late ? 'Да' : day.plan_missing ? 'Нет плана' : 'Нет',
-          day.fact_time || '', day.fact_late ? 'Да' : day.fact_missing ? 'Нет факта' : 'Нет',
-          day.completion ?? '',
-          ...kpiCols
-        ]);
-      }
-    }
-    const ws2 = XLSX.utils.aoa_to_sheet(detailRows);
-    XLSX.utils.book_append_sheet(wb, ws2, 'По дням');
-
-    // Sheet 3: Violations
-    const violRows = [['Магазин', 'Директор', 'Дата', 'Тип', 'Время подачи']];
-    for (const s of data.stores) {
-      for (const d of data.working_days) {
-        const day = s.days[d];
-        if (!day) continue;
-        if (day.plan_late) violRows.push([s.store_number, s.director_name, d.split('-').reverse().join('.'), 'План', day.plan_time]);
-        if (day.fact_late) violRows.push([s.store_number, s.director_name, d.split('-').reverse().join('.'), 'Факт', day.fact_time]);
-        if (day.plan_missing) violRows.push([s.store_number, s.director_name, d.split('-').reverse().join('.'), 'Нет плана', '']);
-      }
-    }
-    const ws3 = XLSX.utils.aoa_to_sheet(violRows);
-    XLSX.utils.book_append_sheet(wb, ws3, 'Нарушения');
-
-    const filename = period === 'week' ? `kari-report-week-${week}.xlsx` : `kari-report-${month}.xlsx`;
-    XLSX.writeFile(wb, filename);
+    const label = period === 'week' ? `неделя-${week}` : `месяц-${month}`;
+    exportReportToExcel(data, label);
   }
 
   function getPeriodLabel() {

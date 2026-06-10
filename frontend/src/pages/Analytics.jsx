@@ -3,6 +3,7 @@ import api from '../api/client';
 import { RankingBarChart, NetworkTrendsChart, FillRateBarChart } from '../components/Charts';
 import EngagementBadge from '../components/EngagementBadge';
 import { exportToCSV, exportToExcel, exportToPDF } from '../utils/exports';
+import { exportRankingsToExcel } from '../utils/exportExcel';
 
 const PERIODS = [
   { key: 'week', label: 'Неделя' },
@@ -61,18 +62,18 @@ export default function Analytics() {
 
       {/* Export */}
       <div className="card p-4 flex flex-wrap gap-2 items-center">
-        <span className="text-sm font-medium text-gray-700 mr-2">Экспорт данных:</span>
+        <span className="text-sm font-medium text-gray-700 mr-2">Экспорт:</span>
+        <button
+          onClick={() => rankings.length && exportRankingsToExcel(rankings, period)}
+          className="px-3 py-1.5 rounded-lg text-sm font-medium bg-green-600 text-white hover:bg-green-700 transition-colors"
+        >
+          📥 Excel (цветной)
+        </button>
         <button
           onClick={() => exportData && exportToCSV(exportData.rows, `kari-report-${period}`)}
           className="btn-secondary text-sm"
         >
           📄 CSV
-        </button>
-        <button
-          onClick={() => exportData && exportToExcel(exportData.rows, `kari-report-${period}`)}
-          className="btn-secondary text-sm"
-        >
-          📊 Excel
         </button>
         <button
           onClick={() => rankings.length && exportToPDF(rankings, `Рейтинг магазинов (${period})`)}

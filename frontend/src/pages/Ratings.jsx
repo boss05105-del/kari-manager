@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../api/client';
+import { exportRankingsToExcel } from '../utils/exportExcel';
 
 const MEDALS = ['🥇', '🥈', '🥉'];
 
@@ -96,7 +97,7 @@ export default function Ratings() {
             {period === 'day' ? today : monthLabel}
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap">
           <button
             onClick={() => setPeriod('day')}
             className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
@@ -112,6 +113,12 @@ export default function Ratings() {
             }`}
           >
             📆 Месяц
+          </button>
+          <button
+            onClick={() => data?.topCompletion?.length && exportRankingsToExcel(data.topCompletion.map((s,i) => ({...s, rank: i+1, engagement_index: s.completion || 0, engagement_label: '', fill_rate: 0, streak: 0})), period)}
+            className="px-3 py-1.5 rounded-lg text-sm font-medium bg-green-600 text-white hover:bg-green-700 transition-colors"
+          >
+            📥 Excel
           </button>
         </div>
       </div>

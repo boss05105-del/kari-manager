@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import api from '../api/client';
+import { exportHeatmapToExcel } from '../utils/exportExcel';
 
 const KPI_KEYS = [
   'ui_percent','gold_qty','silver_qty','finmoll_qty','kari_qty',
@@ -298,6 +299,12 @@ export default function DirectorControl() {
               {p.label}
             </button>
           ))}
+          <button
+            onClick={() => data.length && exportHeatmapToExcel(data, period)}
+            className="px-3 py-1.5 rounded-lg text-sm font-medium bg-green-600 text-white hover:bg-green-700 transition-colors flex items-center gap-1"
+          >
+            📥 Excel
+          </button>
         </div>
       </div>
 
