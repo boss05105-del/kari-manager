@@ -149,8 +149,14 @@ export function exportHeatmapToExcel(data, period) {
   const wb = XLSXStyle.utils.book_new();
   const periodLabel = period === 'week' ? 'Неделя' : period === 'month' ? 'Месяц' : 'Квартал';
 
-  const headers = ['Магазин', 'Директор', 'Ср.%', ...KPI_KEYS.map(k => KPI_SHORT[k]), 'Пл.вовремя', 'Фк.вовремя', 'Тренд'];
-  const colWidths = [10, 22, 8, ...KPI_KEYS.map(() => 8), 11, 11, 12];
+  const KPI_FULL = {
+    ui_percent: 'Уровень сервиса', gold_qty: 'Золотые карты', silver_qty: 'Серебряные карты',
+    finmoll_qty: 'Рассрочка Финмолл', kari_qty: 'Kari Частями', yandex_qty: 'Яндекс Сплит',
+    items_per_receipt: 'Штук в чеке', conversion_shoes: 'Конверсия обувь',
+    conversion_insoles: 'Конверсия стельки', sbp_share: 'Доля СБП', mp_install_qty: 'Установка МП'
+  };
+  const headers = ['Магазин', 'Директор', 'Планы сданы %', 'Ср. выполнение', ...KPI_KEYS.map(k => KPI_FULL[k]), 'Вовремя % (из сданных)', 'Тренд'];
+  const colWidths = [10, 22, 14, 15, ...KPI_KEYS.map(() => 14), 22, 14];
 
   const sorted = [...data].sort((a, b) => (a.avg_completion ?? -1) - (b.avg_completion ?? -1));
 
@@ -162,10 +168,10 @@ export function exportHeatmapToExcel(data, period) {
     return [
       cell(s.store_number, cs(zebra, 'FF111827', true)),
       cell(s.director_name || '—', cs(zebra, 'FF374151', false, 'left')),
+      pctCell(s.plan_fill_rate),
       pctCell(s.avg_completion),
       ...KPI_KEYS.map(k => pctCell(s.kpi_avgs?.[k] ?? null)),
       pctCell(s.plan_punctuality),
-      pctCell(s.fact_punctuality),
       cell(trendMap[s.trend] || '—', cs(trendFill, trendFont, false))
     ];
   });
@@ -316,8 +322,14 @@ export function exportReportToExcel(reportData, label) {
   XLSXStyle.utils.book_append_sheet(wb, ws2, 'По дням');
 
   // Sheet 3: KPI breakdown per store
-  const kpiHeaders = ['Магазин', 'Директор', ...KPI_KEYS.map(k => KPI_SHORT[k])];
-  const kpiColWidths = [10, 22, ...KPI_KEYS.map(() => 9)];
+  const KPI_FULL_NAMES = {
+    ui_percent: 'Уровень сервиса', gold_qty: 'Золотые карты', silver_qty: 'Серебряные карты',
+    finmoll_qty: 'Рассрочка Финмолл', kari_qty: 'Kari Частями', yandex_qty: 'Яндекс Сплит',
+    items_per_receipt: 'Штук в чеке', conversion_shoes: 'Конверсия обувь',
+    conversion_insoles: 'Конверсия стельки', sbp_share: 'Доля СБП', mp_install_qty: 'Установка МП'
+  };
+  const kpiHeaders = ['Магазин', 'Директор', ...KPI_KEYS.map(k => KPI_FULL_NAMES[k])];
+  const kpiColWidths = [10, 22, ...KPI_KEYS.map(() => 16)];
 
   const kpiRows = stores.map((store, idx) => {
     const zebra = idx % 2 === 0 ? 'FFF9FAFB' : 'FFFFFFFF';

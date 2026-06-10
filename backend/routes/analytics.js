@@ -607,6 +607,16 @@ router.get('/kpi-heatmap', authMiddleware, async (req, res) => {
       ORDER BY s.store_number::integer
     `);
 
+    // Count working days in period (Mon-Sat up to today)
+    const workingDaysInPeriod = [];
+    const wCursor = new Date(from + 'T00:00:00');
+    const wEnd = new Date(Math.min(new Date(to + 'T23:59:59'), new Date()));
+    while (wCursor <= wEnd) {
+      if (wCursor.getDay() !== 0) workingDaysInPeriod.push(wCursor.toISOString().split('T')[0]);
+      wCursor.setDate(wCursor.getDate() + 1);
+    }
+    const totalWorkingDays = workingDaysInPeriod.length;
+
     const result = await Promise.all(stores.map(async store => {
       const [plans, facts, todayPlan, todayFact] = await Promise.all([
         dbAll('SELECT * FROM daily_plans WHERE store_id = ? AND plan_date >= ? AND plan_date <= ?', [store.id, from, to]),
@@ -693,14 +703,23 @@ router.get('/kpi-heatmap', authMiddleware, async (req, res) => {
       const weak_kpis = KPI_KEYS.filter(k => kpi_avgs[k] != null && kpi_avgs[k] < 70);
       const strong_kpis = KPI_KEYS.filter(k => kpi_avgs[k] != null && kpi_avgs[k] >= 90);
 
+      // Fill rate = % of working days that had a plan submitted
+      const plan_fill_rate = totalWorkingDays > 0 ? Math.round((planTotalCount / totalWorkingDays) * 100) : null;
+      const fact_fill_rate = totalWorkingDays > 0 ? Math.round((factTotalCount / totalWorkingDays) * 100) : null;
+      // Punctuality = % of submitted plans that were on time (only shown if fill rate is meaningful)
+      const plan_punctuality = planTotalCount > 0 ? Math.round((planOnTimeCount / planTotalCount) * 100) : null;
+      const fact_punctuality = factTotalCount > 0 ? Math.round((factOnTimeCount / factTotalCount) * 100) : null;
+
       return {
         store_id: store.id,
         store_number: store.store_number,
         director_name: store.director_name || '—',
         kpi_avgs,
         avg_completion: completionCount > 0 ? Math.round(completionTotal / completionCount) : null,
-        plan_punctuality: planTotalCount > 0 ? Math.round((planOnTimeCount / planTotalCount) * 100) : null,
-        fact_punctuality: factTotalCount > 0 ? Math.round((factOnTimeCount / factTotalCount) * 100) : null,
+        plan_fill_rate,   // % рабочих дней с планом (главный показатель дисциплины)
+        fact_fill_rate,   // % рабочих дней с фактом
+        plan_punctuality, // % сданных планов без опоздания
+        fact_punctuality,
         fill_rate: planTotalCount,
         trend,
         today_has_plan: !!todayPlan,
@@ -709,7 +728,8 @@ router.get('/kpi-heatmap', authMiddleware, async (req, res) => {
         consecutive_no_plan,
         weak_kpis,
         strong_kpis,
-        plans_count: planTotalCount
+        plans_count: planTotalCount,
+        total_working_days: totalWorkingDays
       };
     }));
 

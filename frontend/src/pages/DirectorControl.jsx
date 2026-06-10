@@ -73,21 +73,22 @@ function DirectorDetail({ store }) {
       {/* Stats row */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         <div className="bg-white rounded-xl p-3 text-center shadow-sm">
-          <div className="text-xs text-gray-500 mb-1">Ср. выполнение</div>
-          <div className={`text-xl font-bold ${store.avg_completion >= 90 ? 'text-green-600' : store.avg_completion >= 70 ? 'text-yellow-600' : 'text-red-600'}`}>
-            {store.avg_completion ?? '—'}%
+          <div className="text-xs text-gray-500 mb-1">Среднее выполнение</div>
+          <div className={`text-xl font-bold ${(store.avg_completion ?? 0) >= 90 ? 'text-green-600' : (store.avg_completion ?? 0) >= 70 ? 'text-yellow-600' : 'text-red-600'}`}>
+            {store.avg_completion ?? '—'}{store.avg_completion != null ? '%' : ''}
           </div>
         </div>
         <div className="bg-white rounded-xl p-3 text-center shadow-sm">
-          <div className="text-xs text-gray-500 mb-1">Планы вовремя</div>
+          <div className="text-xs text-gray-500 mb-1">Планы сданы</div>
+          <div className={`text-xl font-bold ${(store.plan_fill_rate ?? 0) >= 80 ? 'text-green-600' : (store.plan_fill_rate ?? 0) >= 50 ? 'text-orange-600' : 'text-red-600'}`}>
+            {store.plan_fill_rate ?? '—'}{store.plan_fill_rate != null ? '%' : ''}
+          </div>
+          <div className="text-xs text-gray-400">{store.plans_count} из {store.total_working_days} дней</div>
+        </div>
+        <div className="bg-white rounded-xl p-3 text-center shadow-sm">
+          <div className="text-xs text-gray-500 mb-1">Вовремя (из сданных)</div>
           <div className={`text-xl font-bold ${(store.plan_punctuality ?? 0) >= 80 ? 'text-green-600' : 'text-orange-600'}`}>
-            {store.plan_punctuality ?? '—'}%
-          </div>
-        </div>
-        <div className="bg-white rounded-xl p-3 text-center shadow-sm">
-          <div className="text-xs text-gray-500 mb-1">Факты вовремя</div>
-          <div className={`text-xl font-bold ${(store.fact_punctuality ?? 0) >= 80 ? 'text-green-600' : 'text-orange-600'}`}>
-            {store.fact_punctuality ?? '—'}%
+            {store.plan_punctuality ?? '—'}{store.plan_punctuality != null ? '%' : ''}
           </div>
         </div>
         <div className="bg-white rounded-xl p-3 text-center shadow-sm">
@@ -387,9 +388,10 @@ export default function DirectorControl() {
                   <tr>
                     <SortTh col="store_number" className="sticky left-0 bg-gray-50 z-10">Магазин</SortTh>
                     <SortTh col="director_name">Директор</SortTh>
-                    <SortTh col="avg_completion">Ср.%</SortTh>
+                    <SortTh col="plan_fill_rate">Планы сданы</SortTh>
+                    <SortTh col="avg_completion">Ср. выполнение</SortTh>
                     {KPI_KEYS.map(k => (
-                      <SortTh key={k} col={`kpi_${k}`}>{KPI_SHORT[k]}</SortTh>
+                      <SortTh key={k} col={`kpi_${k}`}>{KPI_FULL[k]}</SortTh>
                     ))}
                     <th className="table-header">Сегодня</th>
                     <th className="table-header">Тренд</th>
@@ -411,6 +413,12 @@ export default function DirectorControl() {
                         </td>
                         {/* Director */}
                         <td className="table-cell text-xs text-gray-600 max-w-[120px] truncate">{store.director_name}</td>
+                        {/* Plan fill rate */}
+                        <td className="table-cell">
+                          <span className={`inline-block px-2 py-0.5 rounded text-xs font-bold ${pctColor(store.plan_fill_rate)}`}>
+                            {store.plan_fill_rate != null ? `${store.plan_fill_rate}%` : '—'}
+                          </span>
+                        </td>
                         {/* Avg completion */}
                         <td className="table-cell">
                           <span className={`inline-block px-2 py-0.5 rounded text-xs font-bold ${pctColor(store.avg_completion)}`}>
@@ -443,7 +451,7 @@ export default function DirectorControl() {
                       </tr>
                       {expanded === store.store_id && (
                         <tr>
-                          <td colSpan={16}>
+                          <td colSpan={17}>
                             <DirectorDetail store={store} />
                           </td>
                         </tr>
