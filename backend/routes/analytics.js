@@ -583,4 +583,141 @@ router.get('/export', authMiddleware, async (req, res) => {
   }
 });
 
+// KPI Heatmap: per-store, per-KPI avg completion + risk signals
+router.get('/kpi-heatmap', authMiddleware, async (req, res) => {
+  try {
+    const { period = 'month' } = req.query;
+    const { from, to } = getDateRange(period);
+    const today = new Date().toISOString().split('T')[0];
+
+    const KPI_KEYS = [
+      'ui_percent','gold_qty','silver_qty','finmoll_qty','kari_qty',
+      'yandex_qty','items_per_receipt','conversion_shoes','conversion_insoles','sbp_share','mp_install_qty'
+    ];
+
+    function toDateKey(val) {
+      if (!val) return null;
+      if (val instanceof Date) return val.toISOString().split('T')[0];
+      return String(val).split('T')[0];
+    }
+
+    const stores = await dbAll(`
+      SELECT s.id, s.store_number, u.full_name as director_name
+      FROM stores s LEFT JOIN users u ON u.id = s.director_id
+      ORDER BY s.store_number::integer
+    `);
+
+    const result = await Promise.all(stores.map(async store => {
+      const [plans, facts, todayPlan, todayFact] = await Promise.all([
+        dbAll('SELECT * FROM daily_plans WHERE store_id = ? AND plan_date >= ? AND plan_date <= ?', [store.id, from, to]),
+        dbAll('SELECT * FROM daily_facts WHERE store_id = ? AND fact_date >= ? AND fact_date <= ?', [store.id, from, to]),
+        dbGet('SELECT id, is_late FROM daily_plans WHERE store_id = ? AND plan_date = ?', [store.id, today]),
+        dbGet('SELECT id FROM daily_facts WHERE store_id = ? AND fact_date = ?', [store.id, today])
+      ]);
+
+      const factsByDate = {};
+      facts.forEach(f => { factsByDate[toDateKey(f.fact_date)] = f; });
+
+      // Per-KPI totals
+      const kpiTotals = {}, kpiCounts = {};
+      KPI_KEYS.forEach(k => { kpiTotals[k] = 0; kpiCounts[k] = 0; });
+
+      let planOnTimeCount = 0, planTotalCount = 0;
+      let factOnTimeCount = 0, factTotalCount = 0;
+      let completionTotal = 0, completionCount = 0;
+
+      // Last 7 days for trend
+      const last7 = [], prev7 = [];
+
+      for (const plan of plans) {
+        const dateKey = toDateKey(plan.plan_date);
+        planTotalCount++;
+        if (!plan.is_late) planOnTimeCount++;
+
+        const fact = factsByDate[dateKey];
+        if (fact) {
+          factTotalCount++;
+          if (!fact.is_late) factOnTimeCount++;
+
+          let dayTotal = 0, dayCnt = 0;
+          for (const k of KPI_KEYS) {
+            if (plan[k] != null && fact[k] != null && plan[k] > 0) {
+              const pct = Math.min(fact[k] / plan[k], 1.5) * 100;
+              kpiTotals[k] += pct;
+              kpiCounts[k]++;
+              dayTotal += pct;
+              dayCnt++;
+            }
+          }
+          if (dayCnt > 0) {
+            const dayCompletion = dayTotal / dayCnt;
+            completionTotal += dayCompletion;
+            completionCount++;
+
+            // Classify into last7 / prev7
+            const daysAgo = Math.round((new Date(today) - new Date(dateKey)) / 86400000);
+            if (daysAgo <= 7) last7.push(dayCompletion);
+            else if (daysAgo <= 14) prev7.push(dayCompletion);
+          }
+        }
+      }
+
+      const kpi_avgs = {};
+      for (const k of KPI_KEYS) {
+        kpi_avgs[k] = kpiCounts[k] > 0 ? Math.round(kpiTotals[k] / kpiCounts[k]) : null;
+      }
+
+      const avg7 = last7.length ? last7.reduce((a, b) => a + b, 0) / last7.length : null;
+      const avg_prev7 = prev7.length ? prev7.reduce((a, b) => a + b, 0) / prev7.length : null;
+      let trend = 'stable';
+      if (avg7 != null && avg_prev7 != null) {
+        if (avg7 > avg_prev7 + 5) trend = 'up';
+        else if (avg7 < avg_prev7 - 5) trend = 'down';
+      }
+
+      // Consecutive days without plan (risk signal)
+      const recentDates = [];
+      const cursor = new Date(today);
+      for (let i = 0; i < 7; i++) {
+        recentDates.push(cursor.toISOString().split('T')[0]);
+        cursor.setDate(cursor.getDate() - 1);
+      }
+      let consecutive_no_plan = 0;
+      for (const d of recentDates) {
+        const hasPlan = plans.find(p => toDateKey(p.plan_date) === d);
+        if (!hasPlan) consecutive_no_plan++;
+        else break;
+      }
+
+      // Weak KPIs: avg < 70%
+      const weak_kpis = KPI_KEYS.filter(k => kpi_avgs[k] != null && kpi_avgs[k] < 70);
+      const strong_kpis = KPI_KEYS.filter(k => kpi_avgs[k] != null && kpi_avgs[k] >= 90);
+
+      return {
+        store_id: store.id,
+        store_number: store.store_number,
+        director_name: store.director_name || '—',
+        kpi_avgs,
+        avg_completion: completionCount > 0 ? Math.round(completionTotal / completionCount) : null,
+        plan_punctuality: planTotalCount > 0 ? Math.round((planOnTimeCount / planTotalCount) * 100) : null,
+        fact_punctuality: factTotalCount > 0 ? Math.round((factOnTimeCount / factTotalCount) * 100) : null,
+        fill_rate: planTotalCount,
+        trend,
+        today_has_plan: !!todayPlan,
+        today_has_fact: !!todayFact,
+        today_plan_late: todayPlan?.is_late || false,
+        consecutive_no_plan,
+        weak_kpis,
+        strong_kpis,
+        plans_count: planTotalCount
+      };
+    }));
+
+    res.json(result);
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ error: 'Ошибка сервера' });
+  }
+});
+
 module.exports = router;
