@@ -150,7 +150,7 @@ export function exportHeatmapToExcel(data, period) {
   const periodLabel = period === 'week' ? 'Неделя' : period === 'month' ? 'Месяц' : 'Квартал';
 
   const KPI_FULL = {
-    ui_percent: 'Уровень сервиса', gold_qty: 'Золотые карты', silver_qty: 'Серебряные карты',
+    ui_percent: 'Уровень сервиса', gold_qty: 'Золото (шт)', silver_qty: 'Серебро (шт)',
     finmoll_qty: 'Рассрочка Финмолл', kari_qty: 'Kari Частями', yandex_qty: 'Яндекс Сплит',
     items_per_receipt: 'Штук в чеке', conversion_shoes: 'Конверсия обувь',
     conversion_insoles: 'Конверсия стельки', sbp_share: 'Доля СБП', mp_install_qty: 'Установка МП'
@@ -323,7 +323,7 @@ export function exportReportToExcel(reportData, label) {
 
   // Sheet 3: KPI breakdown per store
   const KPI_FULL_NAMES = {
-    ui_percent: 'Уровень сервиса', gold_qty: 'Золотые карты', silver_qty: 'Серебряные карты',
+    ui_percent: 'Уровень сервиса', gold_qty: 'Золото (шт)', silver_qty: 'Серебро (шт)',
     finmoll_qty: 'Рассрочка Финмолл', kari_qty: 'Kari Частями', yandex_qty: 'Яндекс Сплит',
     items_per_receipt: 'Штук в чеке', conversion_shoes: 'Конверсия обувь',
     conversion_insoles: 'Конверсия стельки', sbp_share: 'Доля СБП', mp_install_qty: 'Установка МП'

@@ -15,7 +15,7 @@ const KPI_SHORT = {
 };
 
 const KPI_FULL = {
-  ui_percent: 'Уровень сервиса', gold_qty: 'Золотые карты', silver_qty: 'Серебряные карты',
+  ui_percent: 'Уровень сервиса', gold_qty: 'Золото (шт)', silver_qty: 'Серебро (шт)',
   finmoll_qty: 'Рассрочка Финмолл', kari_qty: 'Kari Частями', yandex_qty: 'Яндекс Сплит',
   items_per_receipt: 'Штук в чеке', conversion_shoes: 'Конверсия обувь',
   conversion_insoles: 'Конверсия стельки', sbp_share: 'Доля СБП', mp_install_qty: 'Установка МП'
