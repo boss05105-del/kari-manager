@@ -43,8 +43,10 @@ router.post('/', authMiddleware, async (req, res) => {
     }
 
     const now = new Date();
-    const moscowHour = new Date(now.toLocaleString('en-US', { timeZone: 'Europe/Moscow' })).getHours();
-    const isToday = plan_date === now.toISOString().split('T')[0];
+    const moscowNow = new Date(now.toLocaleString('en-US', { timeZone: 'Europe/Moscow' }));
+    const moscowHour = moscowNow.getHours();
+    const moscowToday = `${moscowNow.getFullYear()}-${String(moscowNow.getMonth()+1).padStart(2,'0')}-${String(moscowNow.getDate()).padStart(2,'0')}`;
+    const isToday = plan_date === moscowToday;
     const isLate = isToday && moscowHour >= 11;
 
     const director = await dbGet(

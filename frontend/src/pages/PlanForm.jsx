@@ -8,9 +8,10 @@ export default function PlanForm() {
   const user = JSON.parse(localStorage.getItem('user') || '{}');
   const kpiExclusions = user.kpi_exclusions ?? null;
   const hasGold = !NO_GOLD_STORES.has(String(user.store_number));
-  const today = new Date().toISOString().split('T')[0];
   const now = new Date();
-  const moscowHour = new Date(now.toLocaleString('en-US', { timeZone: 'Europe/Moscow' })).getHours();
+  const moscowNow = new Date(now.toLocaleString('en-US', { timeZone: 'Europe/Moscow' }));
+  const today = `${moscowNow.getFullYear()}-${String(moscowNow.getMonth()+1).padStart(2,'0')}-${String(moscowNow.getDate()).padStart(2,'0')}`;
+  const moscowHour = moscowNow.getHours();
   const isLateWarning = moscowHour >= 10;
   const isLate = moscowHour >= 11;
 

@@ -40,7 +40,8 @@ router.post('/', authMiddleware, async (req, res) => {
     const moscowNow = new Date(now.toLocaleString('en-US', { timeZone: 'Europe/Moscow' }));
     const moscowHour = moscowNow.getHours();
     const moscowMin = moscowNow.getMinutes();
-    const isToday = fact_date === now.toISOString().split('T')[0];
+    const moscowToday = `${moscowNow.getFullYear()}-${String(moscowNow.getMonth()+1).padStart(2,'0')}-${String(moscowNow.getDate()).padStart(2,'0')}`;
+    const isToday = fact_date === moscowToday;
     const isLate = isToday && (moscowHour > 23 || (moscowHour === 23 && moscowMin >= 30));
 
     const director = await dbGet('SELECT director_id FROM stores WHERE id = ?', [parseInt(store_id)]);
