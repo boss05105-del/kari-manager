@@ -10,6 +10,7 @@ const NAV_ADMIN = [
   { to: '/admin/overdue', label: 'Просрочки', icon: '⚠️' },
   { to: '/admin/report', label: 'Отчёт', icon: '📋' },
   { to: '/admin/control', label: 'Контроль', icon: '🎯' },
+  { to: '/admin/plan-control', label: 'План директора', icon: '📆' },
   { to: '/admin/stores', label: 'Магазины', icon: '🏪' }
 ];
 

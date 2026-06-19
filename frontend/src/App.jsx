@@ -15,6 +15,7 @@ import DirectorReport from './pages/DirectorReport';
 import Ratings from './pages/Ratings';
 import StoreManagement from './pages/StoreManagement';
 import DirectorControl from './pages/DirectorControl';
+import PlanControl from './pages/PlanControl';
 
 function useAuth() {
   const token = localStorage.getItem('token');
@@ -131,6 +132,9 @@ export default function App() {
       } />
       <Route path="/admin/control" element={
         <ProtectedRoute requiredRole="admin"><DirectorControl /></ProtectedRoute>
+      } />
+      <Route path="/admin/plan-control" element={
+        <ProtectedRoute requiredRole="admin"><PlanControl /></ProtectedRoute>
       } />
 
       {/* Director routes */}
