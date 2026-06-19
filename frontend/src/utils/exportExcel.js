@@ -354,7 +354,61 @@ export function exportReportToExcel(reportData, label) {
 }
 
 // ─────────────────────────────────────────────
-// 5. DASHBOARD (today)
+// 5. DISCIPLINE ALL STORES (one sheet per store)
+// ─────────────────────────────────────────────
+export function exportDisciplineAllStoresToExcel(stores, workingDays, monthLabel) {
+  const wb = XLSXStyle.utils.book_new();
+
+  stores.forEach(store => {
+    const storeNum = String(store.store_number || store.store_id);
+    const dirName = store.director_name || '—';
+
+    // Collect violations
+    const violations = workingDays
+      .map(d => ({ date: d, ...store.days?.[d] }))
+      .filter(d => d.plan_late || d.plan_missing || d.fact_late || d.fact_missing);
+
+    const headers = ['Дата', 'Время плана', 'Время факта', 'Нарушение', 'Выполнение %'];
+    const colWidths = [18, 14, 14, 35, 14];
+
+    const rows = violations.length > 0 ? violations.map(v => {
+      const issues = [];
+      if (v.plan_missing) issues.push('Нет плана');
+      else if (v.plan_late) issues.push('Опоздание плана');
+      if (v.fact_missing) issues.push('Нет факта');
+      else if (v.fact_late) issues.push('Опоздание факта');
+
+      const issueFill = v.plan_missing || v.fact_missing ? 'FFFECACA' : 'FFFEF9C3';
+      const issueFont = v.plan_missing || v.fact_missing ? 'FFB91C1C' : 'FF92400E';
+      const rowFill = v.plan_missing || v.fact_missing ? 'FFFEF2F2' : 'FFFEFCE8';
+
+      const dt = new Date(v.date + 'T12:00:00');
+      const dateStr = dt.toLocaleDateString('ru-RU', { weekday: 'short', day: 'numeric', month: 'short' });
+
+      return [
+        cell(dateStr, cs(rowFill, 'FF374151', false, 'left')),
+        cell(v.plan_time || '—', cs(rowFill, v.plan_late ? 'FFB91C1C' : (v.plan_missing ? 'FFB91C1C' : 'FF166534'), v.plan_late || v.plan_missing)),
+        cell(v.fact_time || '—', cs(rowFill, v.fact_late ? 'FFB91C1C' : (v.fact_missing ? 'FF6B7280' : 'FF166534'), v.fact_late)),
+        cell(issues.join(', '), cs(issueFill, issueFont, true, 'left')),
+        pctCell(v.completion ?? null)
+      ];
+    }) : [
+      [cell('✅ Нарушений нет', cs('FFD1FAE5', 'FF166534', true, 'center'))]
+    ];
+
+    const title = `${storeNum} · ${dirName} · Дисциплина · ${monthLabel}`;
+    const ws = buildSheet(title, headers, rows, colWidths, 'FFDC2626');
+
+    // Sheet name: max 31 chars, only store number
+    const sheetName = storeNum.slice(0, 31);
+    XLSXStyle.utils.book_append_sheet(wb, ws, sheetName);
+  });
+
+  saveWb(wb, `kari-discipline-${monthLabel}-${new Date().toLocaleDateString('ru-RU').replace(/\./g,'-')}.xlsx`);
+}
+
+// ─────────────────────────────────────────────
+// 6. DASHBOARD (today)
 // ─────────────────────────────────────────────
 export function exportDashboardToExcel(stores) {
   const wb = XLSXStyle.utils.book_new();

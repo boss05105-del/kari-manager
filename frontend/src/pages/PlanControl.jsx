@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import api from '../api/client';
-import { exportReportToExcel } from '../utils/exportExcel';
+import { exportReportToExcel, exportDisciplineAllStoresToExcel } from '../utils/exportExcel';
 
 const KPI_KEYS = [
   'ui_percent','gold_qty','silver_qty','finmoll_qty','kari_qty',
@@ -207,15 +207,28 @@ export default function PlanControl() {
           <h1 className="text-2xl font-bold text-gray-900">Контроль плана директора</h1>
           <p className="text-sm text-gray-500 mt-0.5">Ежедневный контроль постановки плана и выполнения KPI</p>
         </div>
-        <button
-          onClick={() => data && storeData && exportReportToExcel(
-            { working_days: workingDays, stores: [storeData] },
-            `${currentStore?.store_number}-${MONTH_NAMES[month]}-${year}`
-          )}
-          className="px-3 py-1.5 rounded-lg text-sm font-medium bg-green-600 text-white hover:bg-green-700 transition-colors"
-        >
-          📥 Выгрузить в Excel
-        </button>
+        <div className="flex gap-2 flex-wrap">
+          <button
+            onClick={() => data && data.stores.length && exportDisciplineAllStoresToExcel(
+              data.stores,
+              workingDays,
+              `${MONTH_NAMES[month]}-${year}`
+            )}
+            className="px-3 py-1.5 rounded-lg text-sm font-medium bg-red-600 text-white hover:bg-red-700 transition-colors"
+            title="Все магазины — каждый на отдельной вкладке"
+          >
+            📥 Дисциплина (все магазины)
+          </button>
+          <button
+            onClick={() => data && storeData && exportReportToExcel(
+              { working_days: workingDays, stores: [storeData] },
+              `${currentStore?.store_number}-${MONTH_NAMES[month]}-${year}`
+            )}
+            className="px-3 py-1.5 rounded-lg text-sm font-medium bg-green-600 text-white hover:bg-green-700 transition-colors"
+          >
+            📥 Отчёт магазина
+          </button>
+        </div>
       </div>
 
       {/* Controls */}
