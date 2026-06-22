@@ -363,43 +363,47 @@ export function exportDisciplineAllStoresToExcel(stores, workingDays, monthLabel
     const storeNum = String(store.store_number || store.store_id);
     const dirName = store.director_name || '—';
 
-    // Collect violations
-    const violations = workingDays
-      .map(d => ({ date: d, ...store.days?.[d] }))
-      .filter(d => d.plan_late || d.plan_missing || d.fact_late || d.fact_missing);
+    const headers = ['Дата', 'Время плана', 'Время факта', 'Статус', 'Выполнение %'];
+    const colWidths = [18, 14, 14, 38, 14];
 
-    const headers = ['Дата', 'Время плана', 'Время факта', 'Нарушение', 'Выполнение %'];
-    const colWidths = [18, 14, 14, 35, 14];
+    // ALL days — not just violations
+    const rows = workingDays.map(dateStr => {
+      const d = store.days?.[dateStr] || {};
+      const dt = new Date(dateStr + 'T12:00:00');
+      const dateLabel = dt.toLocaleDateString('ru-RU', { weekday: 'short', day: 'numeric', month: 'long' });
 
-    const rows = violations.length > 0 ? violations.map(v => {
       const issues = [];
-      if (v.plan_missing) issues.push('Нет плана');
-      else if (v.plan_late) issues.push('Опоздание плана');
-      if (v.fact_missing) issues.push('Нет факта');
-      else if (v.fact_late) issues.push('Опоздание факта');
+      if (d.plan_missing) issues.push('❌ Нет плана');
+      else if (d.plan_late) issues.push('⏰ Опоздание плана');
+      if (d.fact_missing) issues.push('❌ Нет факта');
+      else if (d.fact_late) issues.push('⏰ Опоздание факта');
 
-      const issueFill = v.plan_missing || v.fact_missing ? 'FFFECACA' : 'FFFEF9C3';
-      const issueFont = v.plan_missing || v.fact_missing ? 'FFB91C1C' : 'FF92400E';
-      const rowFill = v.plan_missing || v.fact_missing ? 'FFFEF2F2' : 'FFFEFCE8';
+      const hasViolation = issues.length > 0;
+      const isCritical = d.plan_missing || d.fact_missing;
 
-      const dt = new Date(v.date + 'T12:00:00');
-      const dateStr = dt.toLocaleDateString('ru-RU', { weekday: 'short', day: 'numeric', month: 'short' });
+      // Row color: red = missing, yellow = late, green = ok
+      const rowFill = isCritical ? 'FFFEF2F2' : hasViolation ? 'FFFEFCE8' : 'FFF0FDF4';
+      const statusFill = isCritical ? 'FFFECACA' : hasViolation ? 'FFFEF9C3' : 'FFD1FAE5';
+      const statusFont = isCritical ? 'FFB91C1C' : hasViolation ? 'FF92400E' : 'FF166534';
+      const statusText = issues.length > 0 ? issues.join(', ') : '✅ Всё в порядке';
+
+      const planTimeFill = d.plan_missing ? 'FFFECACA' : d.plan_late ? 'FFFEF9C3' : rowFill;
+      const planTimeFont = d.plan_missing ? 'FFB91C1C' : d.plan_late ? 'FF92400E' : 'FF166534';
+      const factTimeFill = d.fact_missing ? 'FFFECACA' : d.fact_late ? 'FFFEF9C3' : rowFill;
+      const factTimeFont = d.fact_missing ? 'FF6B7280' : d.fact_late ? 'FF92400E' : 'FF166534';
 
       return [
-        cell(dateStr, cs(rowFill, 'FF374151', false, 'left')),
-        cell(v.plan_time || '—', cs(rowFill, v.plan_late ? 'FFB91C1C' : (v.plan_missing ? 'FFB91C1C' : 'FF166534'), v.plan_late || v.plan_missing)),
-        cell(v.fact_time || '—', cs(rowFill, v.fact_late ? 'FFB91C1C' : (v.fact_missing ? 'FF6B7280' : 'FF166534'), v.fact_late)),
-        cell(issues.join(', '), cs(issueFill, issueFont, true, 'left')),
-        pctCell(v.completion ?? null)
+        cell(dateLabel, cs(rowFill, 'FF374151', false, 'left')),
+        cell(d.plan_time || '—', cs(planTimeFill, planTimeFont, d.plan_late || false)),
+        cell(d.fact_time || '—', cs(factTimeFill, factTimeFont, d.fact_late || false)),
+        cell(statusText, cs(statusFill, statusFont, isCritical, 'left')),
+        d.completion != null ? pctCell(d.completion) : cell('—', cs(rowFill, 'FF9CA3AF'))
       ];
-    }) : [
-      [cell('✅ Нарушений нет', cs('FFD1FAE5', 'FF166534', true, 'center'))]
-    ];
+    });
 
     const title = `${storeNum} · ${dirName} · Дисциплина · ${monthLabel}`;
     const ws = buildSheet(title, headers, rows, colWidths, 'FFDC2626');
 
-    // Sheet name: max 31 chars, only store number
     const sheetName = storeNum.slice(0, 31);
     XLSXStyle.utils.book_append_sheet(wb, ws, sheetName);
   });
