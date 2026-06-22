@@ -5,9 +5,74 @@ const { calcEngagementIndex, getEngagementLabel, calcKpiCompletion } = require('
 
 const router = express.Router();
 
+// ── Timezone helpers ──────────────────────────────────────────────────────────
+// All date/time logic uses Moscow time (Europe/Moscow, UTC+3)
+// Render servers run in UTC — never use toISOString() for "today" directly.
+
+function getMoscowNow() {
+  return new Date(new Date().toLocaleString('en-US', { timeZone: 'Europe/Moscow' }));
+}
+
+function getMoscowDateStr(dt) {
+  const d = dt ? new Date(new Date(dt).toLocaleString('en-US', { timeZone: 'Europe/Moscow' })) : getMoscowNow();
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+
+// Recompute is_late from the actual submitted_at timestamp — do NOT trust the stored flag
+// (stored flag was set with UTC bug before June 2026 fix)
+function computePlanLate(plan) {
+  if (!plan?.submitted_at) return false;
+  const moscow = new Date(new Date(plan.submitted_at).toLocaleString('en-US', { timeZone: 'Europe/Moscow' }));
+  const submittedDate = `${moscow.getFullYear()}-${String(moscow.getMonth()+1).padStart(2,'0')}-${String(moscow.getDate()).padStart(2,'0')}`;
+  const planDate = plan.plan_date instanceof Date
+    ? plan.plan_date.toISOString().split('T')[0]
+    : String(plan.plan_date).split('T')[0];
+  // Plan is late if submitted after 11:00 Moscow ON the plan day
+  return submittedDate === planDate && moscow.getHours() >= 11;
+}
+
+function computeFactLate(fact) {
+  if (!fact?.submitted_at) return false;
+  const moscow = new Date(new Date(fact.submitted_at).toLocaleString('en-US', { timeZone: 'Europe/Moscow' }));
+  const submittedDate = `${moscow.getFullYear()}-${String(moscow.getMonth()+1).padStart(2,'0')}-${String(moscow.getDate()).padStart(2,'0')}`;
+  const factDate = fact.fact_date instanceof Date
+    ? fact.fact_date.toISOString().split('T')[0]
+    : String(fact.fact_date).split('T')[0];
+  // Fact is late if submitted after 23:30 Moscow ON the fact day
+  return submittedDate === factDate && (moscow.getHours() > 23 || (moscow.getHours() === 23 && moscow.getMinutes() >= 30));
+}
+
+// Build working days array (Mon–Sat) from fromStr to min(toStr, moscowToday)
+function buildWorkingDays(fromStr, toStr) {
+  const moscowToday = getMoscowDateStr();
+  const effectiveTo = toStr < moscowToday ? toStr : moscowToday;
+  const days = [];
+  const cursor = new Date(fromStr + 'T00:00:00Z');
+  const end = new Date(effectiveTo + 'T00:00:00Z');
+  while (cursor <= end) {
+    const iso = cursor.toISOString().split('T')[0];
+    if (cursor.getUTCDay() !== 0) days.push(iso); // exclude Sundays (UTC safe since we use Z)
+    cursor.setUTCDate(cursor.getUTCDate() + 1);
+  }
+  return days;
+}
+
+function toDateKey(val) {
+  if (!val) return null;
+  if (val instanceof Date) return val.toISOString().split('T')[0];
+  return String(val).split('T')[0];
+}
+
+function toTimeStr(dt) {
+  if (!dt) return null;
+  return new Date(dt).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Moscow' });
+}
+
+// ── Period helpers ────────────────────────────────────────────────────────────
 function getDateRange(period) {
-  const end = new Date();
-  const start = new Date();
+  const now = getMoscowNow();
+  const end = getMoscowDateStr(now);
+  const start = new Date(now);
   if (period === 'week') {
     const dow = start.getDay();
     start.setDate(start.getDate() - (dow === 0 ? 6 : dow - 1));
@@ -21,26 +86,30 @@ function getDateRange(period) {
   } else {
     start.setDate(start.getDate() - 30);
   }
-  start.setHours(0, 0, 0, 0);
-  return { from: start.toISOString().split('T')[0], to: end.toISOString().split('T')[0] };
+  const from = getMoscowDateStr(start);
+  return { from, to: end };
 }
 
 router.get('/today', authMiddleware, async (req, res) => {
   try {
-    const today = new Date().toISOString().split('T')[0];
-    const [total, plansCount, factsCount, latePlans, lateFacts] = await Promise.all([
+    const today = getMoscowDateStr(); // Moscow date, not UTC!
+    const [total, plansToday, factsToday] = await Promise.all([
       dbGet('SELECT COUNT(*) as n FROM stores'),
-      dbGet('SELECT COUNT(*) as n FROM daily_plans WHERE plan_date = ?', [today]),
-      dbGet('SELECT COUNT(*) as n FROM daily_facts WHERE fact_date = ?', [today]),
-      dbGet('SELECT COUNT(*) as n FROM daily_plans WHERE plan_date = ? AND is_late = 1', [today]),
-      dbGet('SELECT COUNT(*) as n FROM daily_facts WHERE fact_date = ? AND is_late = 1', [today])
+      dbAll('SELECT submitted_at, plan_date FROM daily_plans WHERE plan_date = ?', [today]),
+      dbAll('SELECT submitted_at, fact_date FROM daily_facts WHERE fact_date = ?', [today])
     ]);
-    const t = parseInt(total.n), p = parseInt(plansCount.n), f = parseInt(factsCount.n);
+    const t = parseInt(total.n);
+    const p = plansToday.length;
+    const f = factsToday.length;
+    // Recompute late from submitted_at (not stored is_late flag)
+    const latePlans = plansToday.filter(r => computePlanLate(r)).length;
+    const lateFacts = factsToday.filter(r => computeFactLate(r)).length;
     res.json({
       total_stores: t, plans_submitted: p, facts_submitted: f,
       plans_missing: t - p, facts_missing: t - f,
-      late_plans: parseInt(latePlans.n), late_facts: parseInt(lateFacts.n),
-      plan_rate: Math.round((p / t) * 100), fact_rate: Math.round((f / t) * 100)
+      late_plans: latePlans, late_facts: lateFacts,
+      plan_rate: t > 0 ? Math.round((p / t) * 100) : 0,
+      fact_rate: t > 0 ? Math.round((f / t) * 100) : 0
     });
   } catch (e) {
     res.status(500).json({ error: 'Ошибка сервера' });
@@ -162,22 +231,39 @@ router.get('/overdue', authMiddleware, async (req, res) => {
   try {
     const { period = 'month' } = req.query;
     const { from, to } = getDateRange(period);
-    const totalDays = Math.round((new Date(to) - new Date(from)) / 86400000);
+    // Working days (Mon–Sat) up to Moscow today — NOT calendar days
+    const workingDays = buildWorkingDays(from, to);
 
     const stores = await dbAll('SELECT s.id, s.store_number, u.full_name as director_name FROM stores s LEFT JOIN users u ON u.id = s.director_id');
 
     const result = await Promise.all(stores.map(async store => {
-      const [latePlansRow, lateFactsRow, missingPlansRow] = await Promise.all([
-        dbGet('SELECT COUNT(*) as n FROM daily_plans WHERE store_id = ? AND plan_date >= ? AND plan_date <= ? AND is_late = 1', [store.id, from, to]),
-        dbGet('SELECT COUNT(*) as n FROM daily_facts WHERE store_id = ? AND fact_date >= ? AND fact_date <= ? AND is_late = 1', [store.id, from, to]),
-        dbGet('SELECT COUNT(*) as n FROM daily_plans WHERE store_id = ? AND plan_date >= ? AND plan_date <= ?', [store.id, from, to])
+      const [plans, facts] = await Promise.all([
+        dbAll('SELECT plan_date, submitted_at FROM daily_plans WHERE store_id = ? AND plan_date >= ? AND plan_date <= ?', [store.id, from, to]),
+        dbAll('SELECT fact_date, submitted_at FROM daily_facts WHERE store_id = ? AND fact_date >= ? AND fact_date <= ?', [store.id, from, to])
       ]);
-      const latePlans = parseInt(latePlansRow.n), lateFacts = parseInt(lateFactsRow.n);
-      const missingPlans = Math.max(0, totalDays - parseInt(missingPlansRow.n));
-      return { store_number: store.store_number, director_name: store.director_name || '—', late_plans: latePlans, late_facts: lateFacts, missing_plans: missingPlans, total_violations: latePlans + lateFacts };
+
+      const plansByDate = {}, factsByDate = {};
+      plans.forEach(p => { plansByDate[toDateKey(p.plan_date)] = p; });
+      facts.forEach(f => { factsByDate[toDateKey(f.fact_date)] = f; });
+
+      let latePlans = 0, missingPlans = 0, lateFacts = 0;
+      for (const d of workingDays) {
+        const plan = plansByDate[d];
+        const fact = factsByDate[d];
+        if (!plan) missingPlans++;
+        else if (computePlanLate(plan)) latePlans++;
+        if (fact && computeFactLate(fact)) lateFacts++;
+      }
+
+      return {
+        store_number: store.store_number, director_name: store.director_name || '—',
+        late_plans: latePlans, late_facts: lateFacts, missing_plans: missingPlans,
+        total_violations: latePlans + lateFacts
+      };
     }));
 
-    res.json(result.filter(s => s.total_violations > 0 || s.missing_plans > 0)
+    res.json(result
+      .filter(s => s.total_violations > 0 || s.missing_plans > 0)
       .sort((a, b) => (b.total_violations + b.missing_plans) - (a.total_violations + a.missing_plans)));
   } catch (e) {
     res.status(500).json({ error: 'Ошибка сервера' });
@@ -187,21 +273,14 @@ router.get('/overdue', authMiddleware, async (req, res) => {
 router.get('/top-ratings', authMiddleware, async (req, res) => {
   try {
     const { period = 'day' } = req.query;
-    const now = new Date();
-    const today = now.toISOString().split('T')[0];
-
-    const monthStart = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`;
+    const today = getMoscowDateStr(); // Moscow date!
+    const moscowNow = getMoscowNow();
+    const monthStart = `${moscowNow.getFullYear()}-${String(moscowNow.getMonth() + 1).padStart(2, '0')}-01`;
 
     function toMoscowMinutes(dt) {
       if (!dt) return null;
-      const d = new Date(dt);
-      const moscow = new Date(d.toLocaleString('en-US', { timeZone: 'Europe/Moscow' }));
+      const moscow = new Date(new Date(dt).toLocaleString('en-US', { timeZone: 'Europe/Moscow' }));
       return moscow.getHours() * 60 + moscow.getMinutes();
-    }
-    function toDateKey(val) {
-      if (!val) return null;
-      if (val instanceof Date) return val.toISOString().split('T')[0];
-      return String(val).split('T')[0];
     }
     function formatMinutes(mins) {
       if (mins == null) return '—';
@@ -240,8 +319,8 @@ router.get('/top-ratings', authMiddleware, async (req, res) => {
         return {
           store_id: store.id, store_number: store.store_number,
           director_name: store.director_name || '—',
-          plan_mins: planMins, plan_time: formatMinutes(planMins), plan_late: plan?.is_late || false,
-          fact_mins: factMins, fact_time: formatMinutes(factMins), fact_late: fact?.is_late || false,
+          plan_mins: planMins, plan_time: formatMinutes(planMins), plan_late: computePlanLate(plan),
+          fact_mins: factMins, fact_time: formatMinutes(factMins), fact_late: computeFactLate(fact),
           completion, has_plan: !!plan, has_fact: !!fact
         };
       } else {
@@ -330,25 +409,10 @@ router.get('/monthly-report', authMiddleware, async (req, res) => {
     const lastDay = new Date(year, mon, 0).getDate();
     const to = `${monthStr}-${String(lastDay).padStart(2, '0')}`;
 
-    function toDateKey(val) {
-      if (!val) return null;
-      if (val instanceof Date) return val.toISOString().split('T')[0];
-      return String(val).split('T')[0];
-    }
-    function toTimeStr(dt) {
-      if (!dt) return null;
-      const d = new Date(dt);
-      return d.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Moscow' });
-    }
+    // toDateKey and toTimeStr are defined globally above
 
-    // Working days up to today
-    const workingDays = [];
-    const cursor = new Date(from + 'T00:00:00');
-    const endDate = new Date(Math.min(new Date(to + 'T23:59:59'), now));
-    while (cursor <= endDate) {
-      if (cursor.getDay() !== 0) workingDays.push(cursor.toISOString().split('T')[0]);
-      cursor.setDate(cursor.getDate() + 1);
-    }
+    // Working days (Mon–Sat) up to Moscow today — using shared helper
+    const workingDays = buildWorkingDays(from, to);
 
     const KPI_KEYS = ['ui_percent','gold_qty','silver_qty','finmoll_qty','kari_qty',
       'yandex_qty','items_per_receipt','conversion_shoes','conversion_insoles','sbp_share','mp_install_qty'];
@@ -374,8 +438,12 @@ router.get('/monthly-report', authMiddleware, async (req, res) => {
       for (const d of workingDays) {
         const plan = plansByDate[d];
         const fact = factsByDate[d];
+        // Recompute late from actual submitted_at — do NOT use stored is_late flag
+        const planIsLate = computePlanLate(plan);
+        const factIsLate = computeFactLate(fact);
+
         if (!plan) missingPlans++;
-        else if (plan.is_late) latePlans++;
+        else if (planIsLate) latePlans++;
 
         let completion = null;
         const kpis = {};
@@ -400,10 +468,10 @@ router.get('/monthly-report', authMiddleware, async (req, res) => {
 
         days[d] = {
           plan_time: toTimeStr(plan?.submitted_at),
-          plan_late: plan?.is_late || false,
+          plan_late: planIsLate,
           plan_missing: !plan,
           fact_time: toTimeStr(fact?.submitted_at),
-          fact_late: fact?.is_late || false,
+          fact_late: factIsLate,
           fact_missing: !fact,
           completion,
           kpis
@@ -454,27 +522,10 @@ router.get('/weekly-report', authMiddleware, async (req, res) => {
     const sunday = new Date(monday);
     sunday.setDate(monday.getDate() + 6);
 
-    function toDateKey(val) {
-      if (!val) return null;
-      if (val instanceof Date) return val.toISOString().split('T')[0];
-      return String(val).split('T')[0];
-    }
-    function toTimeStr(dt) {
-      if (!dt) return null;
-      return new Date(dt).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Moscow' });
-    }
-
-    // Mon–Sat of this week, up to today
-    const workingDays = [];
-    const cursor = new Date(monday);
-    const endDate = new Date(Math.min(sunday, now));
-    while (cursor <= endDate) {
-      workingDays.push(cursor.toISOString().split('T')[0]);
-      cursor.setDate(cursor.getDate() + 1);
-    }
-
-    const from = monday.toISOString().split('T')[0];
-    const to = sunday.toISOString().split('T')[0];
+    const from = getMoscowDateStr(monday);
+    const to = getMoscowDateStr(sunday);
+    // Mon–Sat of this week, up to Moscow today
+    const workingDays = buildWorkingDays(from, to);
 
     const KPI_KEYS = ['ui_percent','gold_qty','silver_qty','finmoll_qty','kari_qty',
       'yandex_qty','items_per_receipt','conversion_shoes','conversion_insoles','sbp_share','mp_install_qty'];
@@ -500,8 +551,10 @@ router.get('/weekly-report', authMiddleware, async (req, res) => {
       for (const d of workingDays) {
         const plan = plansByDate[d];
         const fact = factsByDate[d];
+        const planIsLate = computePlanLate(plan);
+        const factIsLate = computeFactLate(fact);
         if (!plan) missingPlans++;
-        else if (plan.is_late) latePlans++;
+        else if (planIsLate) latePlans++;
 
         let completion = null;
         const kpis = {};
@@ -526,10 +579,10 @@ router.get('/weekly-report', authMiddleware, async (req, res) => {
 
         days[d] = {
           plan_time: toTimeStr(plan?.submitted_at),
-          plan_late: plan?.is_late || false,
+          plan_late: planIsLate,
           plan_missing: !plan,
           fact_time: toTimeStr(fact?.submitted_at),
-          fact_late: fact?.is_late || false,
+          fact_late: factIsLate,
           fact_missing: !fact,
           completion,
           kpis
@@ -588,18 +641,12 @@ router.get('/kpi-heatmap', authMiddleware, async (req, res) => {
   try {
     const { period = 'month' } = req.query;
     const { from, to } = getDateRange(period);
-    const today = new Date().toISOString().split('T')[0];
+    const today = getMoscowDateStr(); // Moscow date!
 
     const KPI_KEYS = [
       'ui_percent','gold_qty','silver_qty','finmoll_qty','kari_qty',
       'yandex_qty','items_per_receipt','conversion_shoes','conversion_insoles','sbp_share','mp_install_qty'
     ];
-
-    function toDateKey(val) {
-      if (!val) return null;
-      if (val instanceof Date) return val.toISOString().split('T')[0];
-      return String(val).split('T')[0];
-    }
 
     const stores = await dbAll(`
       SELECT s.id, s.store_number, u.full_name as director_name
@@ -607,14 +654,8 @@ router.get('/kpi-heatmap', authMiddleware, async (req, res) => {
       ORDER BY s.store_number::integer
     `);
 
-    // Count working days in period (Mon-Sat up to today)
-    const workingDaysInPeriod = [];
-    const wCursor = new Date(from + 'T00:00:00');
-    const wEnd = new Date(Math.min(new Date(to + 'T23:59:59'), new Date()));
-    while (wCursor <= wEnd) {
-      if (wCursor.getDay() !== 0) workingDaysInPeriod.push(wCursor.toISOString().split('T')[0]);
-      wCursor.setDate(wCursor.getDate() + 1);
-    }
+    // Count working days in period (Mon-Sat up to Moscow today)
+    const workingDaysInPeriod = buildWorkingDays(from, to);
     const totalWorkingDays = workingDaysInPeriod.length;
 
     const result = await Promise.all(stores.map(async store => {
@@ -642,12 +683,12 @@ router.get('/kpi-heatmap', authMiddleware, async (req, res) => {
       for (const plan of plans) {
         const dateKey = toDateKey(plan.plan_date);
         planTotalCount++;
-        if (!plan.is_late) planOnTimeCount++;
+        if (!computePlanLate(plan)) planOnTimeCount++;
 
         const fact = factsByDate[dateKey];
         if (fact) {
           factTotalCount++;
-          if (!fact.is_late) factOnTimeCount++;
+          if (!computeFactLate(fact)) factOnTimeCount++;
 
           let dayTotal = 0, dayCnt = 0;
           for (const k of KPI_KEYS) {
@@ -734,6 +775,63 @@ router.get('/kpi-heatmap', authMiddleware, async (req, res) => {
     }));
 
     res.json(result);
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ error: 'Ошибка сервера' });
+  }
+});
+
+// ── Audit endpoint: raw submissions for a store/month (admin only) ────────────
+// GET /analytics/audit?store_id=X&month=YYYY-MM
+// Returns every plan and fact with exact submitted_at timestamp so disputes can be resolved
+router.get('/audit', authMiddleware, async (req, res) => {
+  try {
+    if (req.user.role !== 'admin') return res.status(403).json({ error: 'Только для администраторов' });
+    const { store_id, month } = req.query;
+    const now = getMoscowNow();
+    const monthStr = month || `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+    const [y, m] = monthStr.split('-').map(Number);
+    const from = `${monthStr}-01`;
+    const to = `${monthStr}-${String(new Date(y, m, 0).getDate()).padStart(2,'0')}`;
+
+    let whereClause = 'plan_date >= ? AND plan_date <= ?';
+    let params = [from, to];
+    if (store_id) { whereClause += ' AND store_id = ?'; params.push(parseInt(store_id)); }
+
+    const [plans, facts, stores] = await Promise.all([
+      dbAll(`SELECT p.*, s.store_number, u.full_name as director_name
+             FROM daily_plans p
+             JOIN stores s ON s.id = p.store_id
+             LEFT JOIN users u ON u.id = p.director_id
+             WHERE ${whereClause} ORDER BY plan_date, s.store_number`, params),
+      dbAll(`SELECT f.*, s.store_number, u.full_name as director_name
+             FROM daily_facts f
+             JOIN stores s ON s.id = f.store_id
+             LEFT JOIN users u ON u.id = f.director_id
+             WHERE ${whereClause.replace(/plan_date/g, 'fact_date')} ORDER BY fact_date, s.store_number`, params),
+      dbAll('SELECT id, store_number, (SELECT full_name FROM users WHERE id = director_id) as director_name FROM stores ORDER BY store_number')
+    ]);
+
+    // Enrich with recomputed is_late
+    const enrichedPlans = plans.map(p => ({
+      store_number: p.store_number, director_name: p.director_name,
+      plan_date: toDateKey(p.plan_date),
+      submitted_at_moscow: toTimeStr(p.submitted_at),
+      submitted_at_utc: p.submitted_at,
+      is_late_stored: !!p.is_late,
+      is_late_recomputed: computePlanLate(p),
+      comment: p.comment || ''
+    }));
+    const enrichedFacts = facts.map(f => ({
+      store_number: f.store_number, director_name: f.director_name,
+      fact_date: toDateKey(f.fact_date),
+      submitted_at_moscow: toTimeStr(f.submitted_at),
+      submitted_at_utc: f.submitted_at,
+      is_late_stored: !!f.is_late,
+      is_late_recomputed: computeFactLate(f)
+    }));
+
+    res.json({ month: monthStr, plans: enrichedPlans, facts: enrichedFacts, stores });
   } catch (e) {
     console.error(e);
     res.status(500).json({ error: 'Ошибка сервера' });
