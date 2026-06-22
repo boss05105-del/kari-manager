@@ -42,7 +42,7 @@ function computeFactLate(fact) {
   return submittedDate === factDate && (moscow.getHours() > 23 || (moscow.getHours() === 23 && moscow.getMinutes() >= 30));
 }
 
-// Build working days array (Mon–Sat) from fromStr to min(toStr, moscowToday)
+// Build working days array (all 7 days Mon–Sun) from fromStr to min(toStr, moscowToday)
 function buildWorkingDays(fromStr, toStr) {
   const moscowToday = getMoscowDateStr();
   const effectiveTo = toStr < moscowToday ? toStr : moscowToday;
@@ -50,8 +50,7 @@ function buildWorkingDays(fromStr, toStr) {
   const cursor = new Date(fromStr + 'T00:00:00Z');
   const end = new Date(effectiveTo + 'T00:00:00Z');
   while (cursor <= end) {
-    const iso = cursor.toISOString().split('T')[0];
-    if (cursor.getUTCDay() !== 0) days.push(iso); // exclude Sundays (UTC safe since we use Z)
+    days.push(cursor.toISOString().split('T')[0]); // все 7 дней включая воскресенье
     cursor.setUTCDate(cursor.getUTCDate() + 1);
   }
   return days;
