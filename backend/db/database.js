@@ -5,8 +5,25 @@ const pool = new Pool({
   ssl: { rejectUnauthorized: false },
   max: 3,
   idleTimeoutMillis: 30000,
-  connectionTimeoutMillis: 10000,
+  connectionTimeoutMillis: 15000,
 });
+
+// Neon.tech free tier suspends after inactivity — retry once on connection error
+async function queryWithRetry(sql, params) {
+  try {
+    return await pool.query(sql, params);
+  } catch (err) {
+    const isConnErr = err.code === 'ECONNREFUSED' || err.code === 'ENOTFOUND' ||
+      err.message?.includes('connect') || err.message?.includes('timeout') ||
+      err.message?.includes('terminating');
+    if (isConnErr) {
+      console.log('DB connection lost, retrying in 2s...');
+      await new Promise(r => setTimeout(r, 2000));
+      return await pool.query(sql, params);
+    }
+    throw err;
+  }
+}
 
 function toPositional(sql) {
   let i = 0;
@@ -14,17 +31,17 @@ function toPositional(sql) {
 }
 
 async function dbGet(sql, params = []) {
-  const { rows } = await pool.query(toPositional(sql), params);
+  const { rows } = await queryWithRetry(toPositional(sql), params);
   return rows[0] || null;
 }
 
 async function dbAll(sql, params = []) {
-  const { rows } = await pool.query(toPositional(sql), params);
+  const { rows } = await queryWithRetry(toPositional(sql), params);
   return rows;
 }
 
 async function dbRun(sql, params = []) {
-  return pool.query(toPositional(sql), params);
+  return queryWithRetry(toPositional(sql), params);
 }
 
 async function dbExec(sql) {
