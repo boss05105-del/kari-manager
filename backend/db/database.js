@@ -49,6 +49,20 @@ async function dbExec(sql) {
 }
 
 async function initDatabase() {
+  // Neon may be sleeping on cold start — retry the first connection
+  let connected = false;
+  for (let attempt = 1; attempt <= 5; attempt++) {
+    try {
+      await pool.query('SELECT 1');
+      connected = true;
+      break;
+    } catch (e) {
+      console.log(`DB wake attempt ${attempt}/5 failed: ${e.message}`);
+      await new Promise(r => setTimeout(r, 3000));
+    }
+  }
+  if (!connected) throw new Error('Cannot connect to database after 5 attempts');
+
   await pool.query(`
     CREATE TABLE IF NOT EXISTS users (
       id SERIAL PRIMARY KEY,
