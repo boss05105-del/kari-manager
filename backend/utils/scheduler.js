@@ -33,30 +33,24 @@ function setupScheduler() {
     }
   }, { timezone: 'Europe/Moscow' });
 
-  // Overdue alert at 11:00 + every 3 minutes until plan is submitted
-  cron.schedule('*/3 11-22 * * 1-6', async () => {
+  // Overdue alert at 11:05 — notify directors and admins once
+  cron.schedule('5 11 * * 1-6', async () => {
     const today = new Date().toISOString().split('T')[0];
     const directors = await dbAll(`
       SELECT u.id, u.full_name, s.id as store_id, s.store_number
       FROM users u JOIN stores s ON s.director_id = u.id WHERE u.role = 'director'
     `);
     const admins = await dbAll("SELECT id FROM users WHERE role = 'admin'");
-    const now = new Date();
-    const moscowNow = new Date(now.toLocaleString('en-US', { timeZone: 'Europe/Moscow' }));
-    const isExact11 = moscowNow.getHours() === 11 && moscowNow.getMinutes() < 3;
-
     for (const d of directors) {
       const hasPlan = await dbGet('SELECT 1 FROM daily_plans WHERE store_id = ? AND plan_date = ?', [d.store_id, today]);
       if (!hasPlan) {
         await notifyUser(d.id, 'plan_overdue',
           `⚠️ Просрочка: план на ${today} не внесён — заполните сейчас`,
           '🔴 План не внесён', `Магазин ${d.store_number}: срочно внесите план`);
-        if (isExact11) {
-          for (const admin of admins) {
-            await notifyUser(admin.id, 'director_plan_overdue',
-              `⚠️ Магазин ${d.store_number} — план не внесён (${d.full_name})`,
-              '🔴 Просрочка плана', `Магазин ${d.store_number}: ${d.full_name} не внёс план`);
-          }
+        for (const admin of admins) {
+          await notifyUser(admin.id, 'director_plan_overdue',
+            `⚠️ Магазин ${d.store_number} — план не внесён (${d.full_name})`,
+            '🔴 Просрочка плана', `Магазин ${d.store_number}: ${d.full_name} не внёс план`);
         }
       }
     }
