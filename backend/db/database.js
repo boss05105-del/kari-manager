@@ -157,6 +157,8 @@ async function initDatabase() {
     // Pre-populate kpi_exclusions from hardcoded no-gold list
     `UPDATE stores SET kpi_exclusions = '["gold_qty"]' WHERE store_number IN ('10804','11284','10912','13074','10211','13121','10718','11631','11737','13149','11543','10953','11486','11403','10781','13005','11121','11370','10980','11145') AND (kpi_exclusions IS NULL OR kpi_exclusions = '[]')`,
     `UPDATE stores SET kpi_exclusions = '["gold_qty","ui_percent","silver_qty"]' WHERE store_number = '11092' AND (kpi_exclusions IS NULL OR kpi_exclusions = '[]')`,
+    // Add new store 11808
+    `INSERT INTO stores (store_number, name, kpi_exclusions) VALUES ('11808', 'Магазин 11808', '[]') ON CONFLICT (store_number) DO NOTHING`,
   ];
   for (const sql of migrations) {
     await pool.query(sql).catch(() => {});
