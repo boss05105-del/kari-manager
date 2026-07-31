@@ -18,15 +18,30 @@ app.use(express.json({ limit: '5mb' }));
 
 async function start() {
   const { initDatabase, dbGet } = require('./db/database');
-  await initDatabase();
 
-  // Auto-seed on first run
-  const count = await dbGet('SELECT COUNT(*) as c FROM users');
-  if (parseInt(count.c) === 0) {
-    console.log('Empty database — running seed...');
-    const seed = require('./db/seed');
-    await seed();
-    console.log('Seed complete.');
+  // Try to init DB but don't block server startup if Neon is sleeping
+  // queryWithRetry in each route will handle reconnection on first real request
+  try {
+    await initDatabase();
+    // Auto-seed on first run
+    const count = await dbGet('SELECT COUNT(*) as c FROM users');
+    if (parseInt(count.c) === 0) {
+      console.log('Empty database — running seed...');
+      const seed = require('./db/seed');
+      await seed();
+      console.log('Seed complete.');
+    }
+  } catch (e) {
+    console.warn('DB init skipped (Neon sleeping):', e.message);
+    // Retry init in background after 10s
+    setTimeout(async () => {
+      try {
+        await initDatabase();
+        console.log('DB init completed on retry.');
+      } catch (e2) {
+        console.error('DB init retry failed:', e2.message);
+      }
+    }, 10000);
   }
 
   const { initWebPush } = require('./utils/vapid');
