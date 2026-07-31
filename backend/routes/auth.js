@@ -118,7 +118,7 @@ router.post('/login-store', async (req, res) => {
     });
   } catch (e) {
     console.error(e);
-    res.status(500).json({ error: 'Ошибка сервера', detail: e.message, code: e.code });
+    res.status(500).json({ error: 'Ошибка сервера' });
   }
 });
 
